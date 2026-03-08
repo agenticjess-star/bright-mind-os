@@ -1,7 +1,1 @@
-project_id = "klsxpwvpawvuqfcvzalq"
-
-[functions.polymarket-proxy]
-verify_jwt = false
-
-[functions.crypto-updown-discovery]
-verify_jwt = false
+project_id = "yjguzsujdccqkcpyjqwj"
