@@ -143,8 +143,28 @@ export function useUpDownMarkets({ pollInterval = 60000 }: UseUpDownMarketsOptio
     return acc;
   }, {} as Record<string, number>);
 
+  // Auto-rotation: when active market expires, trigger re-discovery
+  useEffect(() => {
+    if (!activeMarket?.endDate) return;
+    const endMs = new Date(activeMarket.endDate).getTime();
+    const now = Date.now();
+    const msUntilExpiry = endMs - now;
+    if (msUntilExpiry <= 0) {
+      // Already expired — refetch immediately
+      fetchAll();
+      return;
+    }
+    // Schedule a refetch 2s after expiry to pick up the next market
+    const timer = setTimeout(() => {
+      console.log('[UpDown] Market expired, auto-rotating...');
+      fetchAll();
+    }, msUntilExpiry + 2000);
+    return () => clearTimeout(timer);
+  }, [activeMarket?.eventId, activeMarket?.endDate, fetchAll]);
+
   return {
     allMarkets: filteredMarkets,
+    allMarketsRaw: marketsWithLivePrices,
     activeMarket,
     selectedAsset,
     selectedTimeframe,
