@@ -21,9 +21,14 @@ export function TopBar({ isLive, brierScore, nParticles, spotPrice, spotAsset, s
 
   return (
     <header className="h-11 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 gap-4 z-50">
-      <span className="font-display text-[15px] font-bold tracking-tight text-primary glow-primary-strong">
-        TRADING OS
-      </span>
+      <div className="flex items-center gap-1.5">
+        <span className="font-display text-[15px] font-bold tracking-tight text-primary glow-primary-strong">
+          α
+        </span>
+        <span className="font-display text-[13px] font-bold tracking-tight text-foreground">
+          GEMINI
+        </span>
+      </div>
 
       {/* Navigation tabs */}
       <div className="flex rounded-lg overflow-hidden border border-border ml-2">
@@ -45,7 +50,7 @@ export function TopBar({ isLive, brierScore, nParticles, spotPrice, spotAsset, s
               : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
           }`}
         >
-          MARKETS
+          DISCOVERY
         </Link>
       </div>
 
@@ -96,4 +101,3 @@ export function TopBar({ isLive, brierScore, nParticles, spotPrice, spotAsset, s
     </header>
   );
 }
-
