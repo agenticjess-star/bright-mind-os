@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useLiveClock } from '@/hooks/useLiveClock';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { AnimatedValue } from './AnimatedValue';
+import { useLocation, Link } from 'react-router-dom';
 
 interface TopBarProps {
   isLive: boolean;
@@ -16,14 +17,37 @@ interface TopBarProps {
 
 export function TopBar({ isLive, brierScore, nParticles, spotPrice, spotAsset, spotConnected, rightCollapsed, onToggleRight }: TopBarProps) {
   const { formatted } = useLiveClock();
+  const location = useLocation();
 
   return (
     <header className="h-11 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 gap-4 z-50">
       <span className="font-display text-[15px] font-bold tracking-tight text-primary glow-primary-strong">
         TRADING OS
       </span>
-      <span className="text-[9px] text-muted-foreground/30 font-mono">×</span>
-      <span className="text-[9px] text-muted-foreground/50 tracking-wider font-mono">POLYMARKET</span>
+
+      {/* Navigation tabs */}
+      <div className="flex rounded-lg overflow-hidden border border-border ml-2">
+        <Link
+          to="/"
+          className={`px-2.5 py-1 text-[9px] font-mono font-medium transition-all ${
+            location.pathname === '/'
+              ? 'bg-primary/15 text-primary'
+              : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          ENGINE
+        </Link>
+        <Link
+          to="/markets"
+          className={`px-2.5 py-1 text-[9px] font-mono font-medium transition-all border-l border-border ${
+            location.pathname === '/markets'
+              ? 'bg-primary/15 text-primary'
+              : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          MARKETS
+        </Link>
+      </div>
 
       <div className="flex gap-2 ml-auto items-center">
         {spotPrice != null && (
@@ -46,12 +70,16 @@ export function TopBar({ isLive, brierScore, nParticles, spotPrice, spotAsset, s
             ● LIVE
           </motion.span>
         )}
-        <span className="text-[9px] px-2 py-1 rounded-md bg-secondary/60 text-muted-foreground font-mono border border-border/50">
-          BRIER {brierScore.toFixed(3)}
-        </span>
-        <span className="text-[9px] px-2 py-1 rounded-md bg-secondary/60 text-muted-foreground font-mono border border-border/50">
-          N={nParticles.toLocaleString()}
-        </span>
+        {nParticles > 0 && (
+          <>
+            <span className="text-[9px] px-2 py-1 rounded-md bg-secondary/60 text-muted-foreground font-mono border border-border/50">
+              BRIER {brierScore.toFixed(3)}
+            </span>
+            <span className="text-[9px] px-2 py-1 rounded-md bg-secondary/60 text-muted-foreground font-mono border border-border/50">
+              N={nParticles.toLocaleString()}
+            </span>
+          </>
+        )}
         <span className="text-[9px] text-muted-foreground/50 font-mono">
           {formatted}
         </span>
@@ -68,3 +96,4 @@ export function TopBar({ isLive, brierScore, nParticles, spotPrice, spotAsset, s
     </header>
   );
 }
+
