@@ -1,5 +1,7 @@
+import { motion } from 'framer-motion';
 import { useLiveClock } from '@/hooks/useLiveClock';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { AnimatedValue } from './AnimatedValue';
 
 interface TopBarProps {
   isLive: boolean;
@@ -16,39 +18,47 @@ export function TopBar({ isLive, brierScore, nParticles, spotPrice, spotAsset, s
   const { formatted } = useLiveClock();
 
   return (
-    <header className="h-11 bg-background border-b border-border flex items-center px-4 gap-4 z-50">
+    <header className="h-11 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 gap-4 z-50">
       <span className="font-display text-[15px] font-bold tracking-tight text-primary glow-primary-strong">
         TRADING OS
       </span>
-      <span className="text-[9px] text-muted-foreground font-mono">×</span>
-      <span className="text-[9px] text-muted-foreground tracking-wide font-mono">POLYMARKET</span>
+      <span className="text-[9px] text-muted-foreground/30 font-mono">×</span>
+      <span className="text-[9px] text-muted-foreground/50 tracking-wider font-mono">POLYMARKET</span>
 
       <div className="flex gap-2 ml-auto items-center">
         {spotPrice != null && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary font-mono flex items-center gap-1">
-            <span className={`w-1 h-1 rounded-full ${spotConnected ? 'bg-chart-up animate-pulse-live' : 'bg-muted-foreground'}`} />
-            <span className="text-muted-foreground">{spotAsset?.toUpperCase()}</span>
-            <span className="text-foreground">${spotPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </span>
+          <div className="text-[9px] px-2 py-1 rounded-md bg-secondary/60 font-mono flex items-center gap-1.5 border border-border/50">
+            <span className={`w-1.5 h-1.5 rounded-full ${spotConnected ? 'bg-chart-up animate-pulse-live' : 'bg-muted-foreground/40'}`} />
+            <span className="text-muted-foreground/60">{spotAsset?.toUpperCase()}</span>
+            <AnimatedValue
+              value={spotPrice}
+              format={(v) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              className="text-foreground"
+            />
+          </div>
         )}
         {isLive && (
-          <span className="text-[9px] tracking-wide px-2 py-0.5 rounded bg-primary/8 text-primary border border-primary/20 animate-pulse-live font-mono">
+          <motion.span
+            animate={{ opacity: [1, 0.5, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-[9px] tracking-wider px-2 py-1 rounded-md bg-primary/8 text-primary border border-primary/20 font-mono"
+          >
             ● LIVE
-          </span>
+          </motion.span>
         )}
-        <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+        <span className="text-[9px] px-2 py-1 rounded-md bg-secondary/60 text-muted-foreground font-mono border border-border/50">
           BRIER {brierScore.toFixed(3)}
         </span>
-        <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+        <span className="text-[9px] px-2 py-1 rounded-md bg-secondary/60 text-muted-foreground font-mono border border-border/50">
           N={nParticles.toLocaleString()}
         </span>
-        <span className="text-[9px] text-muted-foreground font-mono">
+        <span className="text-[9px] text-muted-foreground/50 font-mono">
           {formatted}
         </span>
         {onToggleRight && (
           <button
             onClick={onToggleRight}
-            className="ml-1 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            className="ml-1 p-1.5 rounded-md hover:bg-secondary text-muted-foreground/50 hover:text-foreground transition-colors"
             title={rightCollapsed ? 'Show governance panel' : 'Hide governance panel'}
           >
             {rightCollapsed ? <PanelRightOpen className="w-3.5 h-3.5" /> : <PanelRightClose className="w-3.5 h-3.5" />}
