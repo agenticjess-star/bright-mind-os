@@ -5,9 +5,10 @@ import { UpDownDisplay } from '@/components/UpDownDisplay';
 import { EventHistory } from '@/components/EventHistory';
 import { LivePriceChart } from '@/components/LivePriceChart';
 import { SmaSignalCard } from '@/components/SmaSignalCard';
-import { PolymarketEmbed } from '@/components/PolymarketEmbed';
+import { ClobHeatmap } from '@/components/ClobHeatmap';
 import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
 import { useCoinbasePrice } from '@/hooks/useCoinbasePrice';
+import { useCoinbasePricesAll } from '@/hooks/useCoinbasePricesAll';
 import { computeSmaSignal } from '@/lib/smaSignal';
 
 function extractTargetPrice(title: string): number | null {
@@ -20,6 +21,7 @@ function extractTargetPrice(title: string): number | null {
 const Index = () => {
   const upDown = useUpDownMarkets({ pollInterval: 20000 });
   const coinbase = useCoinbasePrice(upDown.selectedAsset);
+  const allPrices = useCoinbasePricesAll();
 
   const target = upDown.activeMarket ? extractTargetPrice(upDown.activeMarket.eventTitle) : null;
   const signal = useMemo(
@@ -84,9 +86,13 @@ const Index = () => {
           </div>
 
           <div className="col-span-2 lg:col-span-1">
-            <PolymarketEmbed
-              eventSlug={upDown.activeMarket?.eventSlug ?? null}
-              height={520}
+            <ClobHeatmap
+              allMarkets={upDown.allMarketsRaw}
+              seriesByAsset={allPrices.series}
+              selectedAsset={upDown.selectedAsset}
+              selectedTimeframe={upDown.selectedTimeframe}
+              onSelectAsset={upDown.setSelectedAsset}
+              onSelectTimeframe={upDown.setSelectedTimeframe}
             />
           </div>
 
