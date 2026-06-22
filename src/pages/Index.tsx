@@ -5,9 +5,10 @@ import { UpDownDisplay } from '@/components/UpDownDisplay';
 import { EventHistory } from '@/components/EventHistory';
 import { LivePriceChart } from '@/components/LivePriceChart';
 import { SmaSignalCard } from '@/components/SmaSignalCard';
-import { PolymarketEmbed } from '@/components/PolymarketEmbed';
+import { ClobHeatmap } from '@/components/ClobHeatmap';
 import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
 import { useCoinbasePrice } from '@/hooks/useCoinbasePrice';
+import { useCoinbasePricesAll } from '@/hooks/useCoinbasePricesAll';
 import { computeSmaSignal } from '@/lib/smaSignal';
 
 function extractTargetPrice(title: string): number | null {
