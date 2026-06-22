@@ -21,6 +21,7 @@ function extractTargetPrice(title: string): number | null {
 const Index = () => {
   const upDown = useUpDownMarkets({ pollInterval: 20000 });
   const coinbase = useCoinbasePrice(upDown.selectedAsset);
+  const allPrices = useCoinbasePricesAll();
 
   const target = upDown.activeMarket ? extractTargetPrice(upDown.activeMarket.eventTitle) : null;
   const signal = useMemo(
