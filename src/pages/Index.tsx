@@ -85,9 +85,13 @@ const Index = () => {
           </div>
 
           <div className="col-span-2 lg:col-span-1">
-            <PolymarketEmbed
-              eventSlug={upDown.activeMarket?.eventSlug ?? null}
-              height={520}
+            <ClobHeatmap
+              allMarkets={upDown.allMarketsRaw}
+              seriesByAsset={allPrices.series}
+              selectedAsset={upDown.selectedAsset}
+              selectedTimeframe={upDown.selectedTimeframe}
+              onSelectAsset={upDown.setSelectedAsset}
+              onSelectTimeframe={upDown.setSelectedTimeframe}
             />
           </div>
 
