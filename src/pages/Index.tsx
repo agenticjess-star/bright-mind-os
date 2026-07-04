@@ -6,6 +6,7 @@ import { EventHistory } from '@/components/EventHistory';
 import { LivePriceChart } from '@/components/LivePriceChart';
 import { SmaSignalCard } from '@/components/SmaSignalCard';
 import { ClobHeatmap } from '@/components/ClobHeatmap';
+import { PriceTape } from '@/components/PriceTape';
 import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
 import { useCoinbasePrice } from '@/hooks/useCoinbasePrice';
 import { useCoinbasePricesAll } from '@/hooks/useCoinbasePricesAll';
