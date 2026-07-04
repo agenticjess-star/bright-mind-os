@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { LineChart, Line, YAxis, ResponsiveContainer, ReferenceLine, Tooltip } from 'recharts';
 import type { PricePoint } from '@/hooks/useCoinbasePrice';
 
@@ -9,6 +9,14 @@ interface LivePriceChartProps {
   height?: number;
 }
 
+const WINDOWS: { label: string; ms: number | null }[] = [
+  { label: '30S', ms: 30_000 },
+  { label: '1M', ms: 60_000 },
+  { label: '5M', ms: 300_000 },
+  { label: '15M', ms: 900_000 },
+  { label: 'ALL', ms: null },
+];
+
 function fmtUsd(v: number): string {
   if (v >= 1000) return `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   if (v >= 1) return `$${v.toFixed(2)}`;
@@ -16,16 +24,27 @@ function fmtUsd(v: number): string {
 }
 
 export function LivePriceChart({ series, productId, targetPrice, height = 220 }: LivePriceChartProps) {
-  const data = useMemo(() => series.map(p => ({ ts: p.ts, price: p.price })), [series]);
+  const [windowMs, setWindowMs] = useState<number | null>(60_000);
+
+  const windowed = useMemo(() => {
+    if (windowMs == null || series.length === 0) return series;
+    const cutoff = series[series.length - 1].ts - windowMs;
+    // binary search-ish; series is chronological
+    let i = 0;
+    while (i < series.length && series[i].ts < cutoff) i++;
+    return series.slice(Math.max(0, i - 1));
+  }, [series, windowMs]);
+
+  const data = useMemo(() => windowed.map(p => ({ ts: p.ts, price: p.price })), [windowed]);
 
   const stats = useMemo(() => {
-    if (series.length === 0) return null;
-    const first = series[0].price;
-    const last = series[series.length - 1].price;
+    if (windowed.length === 0) return null;
+    const first = windowed[0].price;
+    const last = windowed[windowed.length - 1].price;
     const change = last - first;
     const pct = first !== 0 ? (change / first) * 100 : 0;
     return { first, last, change, pct };
-  }, [series]);
+  }, [windowed]);
 
   const trendUp = (stats?.change ?? 0) >= 0;
   const strokeColor = trendUp ? 'hsl(var(--chart-up))' : 'hsl(var(--destructive))';
