@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import type { CryptoAsset } from '@/lib/updownTypes';
 
 const WS_URL = 'wss://advanced-trade-ws.coinbase.com';
-const MAX_POINTS = 600;
-const FLUSH_MS = 100;
+const MAX_POINTS = 1500;
+const FLUSH_MS = 40;
 
 const ASSET_TO_PRODUCT: Record<CryptoAsset, string> = {
   btc: 'BTC-USD',
