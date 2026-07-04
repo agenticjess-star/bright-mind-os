@@ -3,8 +3,8 @@ import type { CryptoAsset } from '@/lib/updownTypes';
 import type { PricePoint } from './useCoinbasePrice';
 
 const WS_URL = 'wss://advanced-trade-ws.coinbase.com';
-const MAX_POINTS = 400;
-const FLUSH_MS = 150;
+const MAX_POINTS = 800;
+const FLUSH_MS = 60;
 
 const ASSETS: CryptoAsset[] = ['btc', 'eth', 'sol', 'xrp'];
 const ASSET_TO_PRODUCT: Record<CryptoAsset, string> = {
