@@ -63,33 +63,48 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220 }:
   }
 
   // Y-axis padding so the line doesn't kiss the edges
-  const prices = series.map(p => p.price);
+  const prices = windowed.map(p => p.price);
   const min = Math.min(...prices, targetPrice ?? Infinity);
   const max = Math.max(...prices, targetPrice ?? -Infinity);
   const pad = (max - min) * 0.08 || max * 0.001;
 
   return (
     <div className="bg-card border border-border rounded-lg p-3">
-      <div className="flex items-baseline justify-between mb-2">
-        <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline justify-between mb-2 gap-2">
+        <div className="flex items-baseline gap-2 min-w-0">
           <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px]">
             {productId}
           </span>
           {stats && (
-            <span className="text-[18px] font-display font-bold text-foreground tabular-nums">
+            <span className="text-[20px] font-display font-bold text-foreground tabular-nums leading-none">
               {fmtUsd(stats.last)}
             </span>
           )}
+          {stats && (
+            <span
+              className={`text-[10px] font-mono tabular-nums ${
+                trendUp ? 'text-chart-up' : 'text-destructive'
+              }`}
+            >
+              {trendUp ? '▲' : '▼'} {stats.pct.toFixed(2)}%
+            </span>
+          )}
         </div>
-        {stats && (
-          <span
-            className={`text-[10px] font-mono tabular-nums ${
-              trendUp ? 'text-chart-up' : 'text-destructive'
-            }`}
-          >
-            {trendUp ? '▲' : '▼'} {fmtUsd(Math.abs(stats.change))} ({stats.pct.toFixed(2)}%)
-          </span>
-        )}
+        <div className="flex gap-0.5 bg-secondary/40 rounded p-0.5 shrink-0">
+          {WINDOWS.map(w => (
+            <button
+              key={w.label}
+              onClick={() => setWindowMs(w.ms)}
+              className={`px-1.5 py-0.5 rounded text-[9px] font-mono tracking-[1px] transition-colors ${
+                windowMs === w.ms
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {w.label}
+            </button>
+          ))}
+        </div>
       </div>
       <div style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
