@@ -31,12 +31,19 @@ const Index = () => {
   );
 
   return (
-    <div className="grid grid-rows-[44px_1fr] h-screen overflow-hidden">
+    <div className="grid grid-rows-[44px_32px_1fr] h-screen overflow-hidden">
       <TopBar
         spotPrice={coinbase.price}
         spotAsset={upDown.selectedAsset}
         spotConnected={coinbase.connected}
         clobConnected={upDown.clobConnected}
+      />
+
+      <PriceTape
+        prices={allPrices.prices}
+        series={allPrices.series}
+        selected={upDown.selectedAsset}
+        onSelect={upDown.setSelectedAsset}
       />
 
       <div className="grid grid-cols-[240px_1fr] overflow-hidden">
