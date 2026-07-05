@@ -55,8 +55,8 @@ export function ClobHeatmap({
   }, [rows]);
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2">
+    <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2 shrink-0">
         <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px]">
           CLOB PRICE HEATMAP · CHEAPEST ALIGNED CONTRACT
         </span>
@@ -67,7 +67,7 @@ export function ClobHeatmap({
       </div>
 
       {/* Selector pill row */}
-      <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1">
+      <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1 shrink-0">
         {axis === 'coin'
           ? CRYPTO_ASSETS.map(a => (
               <Pill key={a.value} active={selectedAsset === a.value} onClick={() => onSelectAsset(a.value)}>
@@ -82,15 +82,15 @@ export function ClobHeatmap({
       </div>
 
       {/* Header */}
-      <div className="grid grid-cols-[80px_1fr_1fr_72px] px-3 py-1.5 border-b border-border text-[8px] font-mono text-muted-foreground tracking-[1.5px]">
+      <div className="grid grid-cols-[80px_1fr_1fr_72px] px-3 py-1.5 border-b border-border text-[8px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
         <span>{axis === 'coin' ? 'TIMEFRAME' : 'ASSET'}</span>
         <span className="text-center">UP ¢</span>
         <span className="text-center">DOWN ¢</span>
         <span className="text-right">LEAN</span>
       </div>
 
-      {/* Rows */}
-      <div className="divide-y divide-border">
+      {/* Rows — flex to fill remaining space */}
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin divide-y divide-border">
         <AnimatePresence initial={false}>
           {rows.map(row => (
             <HeatRow key={row.key} row={row} isBest={row.key === bestKey} />
@@ -98,10 +98,9 @@ export function ClobHeatmap({
         </AnimatePresence>
       </div>
 
-      <div className="px-3 py-2 border-t border-border flex items-center gap-3 text-[8px] font-mono text-muted-foreground tracking-[1.5px]">
-        <LegendDot className="bg-chart-up/70" /> ALIGNED W/ LEAN
+      <div className="px-3 py-2 border-t border-border flex items-center gap-3 text-[8px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
+        <LegendDot className="bg-chart-up/70" /> ALIGNED
         <LegendDot className="bg-amber-400/80 ring-1 ring-amber-300/60" /> BEST VALUE
-        <span className="ml-auto opacity-60">SMA crossover prior vs live CLOB best-bid</span>
       </div>
     </div>
   );
