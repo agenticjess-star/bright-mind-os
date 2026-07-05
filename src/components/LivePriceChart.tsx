@@ -107,7 +107,7 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220, f
           ))}
         </div>
       </div>
-      <div style={{ height }}>
+      <div className={fill ? 'flex-1 min-h-0' : ''} style={fill ? undefined : { height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <YAxis
