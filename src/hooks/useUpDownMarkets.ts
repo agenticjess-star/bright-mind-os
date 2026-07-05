@@ -79,13 +79,15 @@ export function useUpDownMarkets({ pollInterval = 120000 }: UseUpDownMarketsOpti
               prevPriceMap.set(m.eventSlug, { up: m.upPrice, down: m.downPrice });
             }
           }
-          return data.map((m: any) => {
+          const next = data.map((m: any) => {
             const cached = prevPriceMap.get(m.eventSlug);
             if (cached && (!m.upPrice || m.upPrice <= 0.02)) {
               return { ...m, upPrice: cached.up, downPrice: cached.down };
             }
             return m;
           });
+          saveCache(next);
+          return next;
         });
         setError(null);
       }
