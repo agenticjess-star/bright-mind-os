@@ -7,6 +7,7 @@ interface LivePriceChartProps {
   productId: string;
   targetPrice?: number | null;
   height?: number;
+  fill?: boolean;
 }
 
 const WINDOWS: { label: string; ms: number | null }[] = [
