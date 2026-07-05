@@ -7,6 +7,7 @@ interface LivePriceChartProps {
   productId: string;
   targetPrice?: number | null;
   height?: number;
+  fill?: boolean;
 }
 
 const WINDOWS: { label: string; ms: number | null }[] = [
@@ -23,7 +24,7 @@ function fmtUsd(v: number): string {
   return `$${v.toFixed(4)}`;
 }
 
-export function LivePriceChart({ series, productId, targetPrice, height = 220 }: LivePriceChartProps) {
+export function LivePriceChart({ series, productId, targetPrice, height = 220, fill = false }: LivePriceChartProps) {
   const [windowMs, setWindowMs] = useState<number | null>(60_000);
 
   const windowed = useMemo(() => {
@@ -52,8 +53,8 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220 }:
   if (series.length < 2) {
     return (
       <div
-        className="flex items-center justify-center bg-card border border-border rounded-lg"
-        style={{ height }}
+        className={`flex items-center justify-center bg-card border border-border rounded-lg ${fill ? 'h-full w-full' : ''}`}
+        style={fill ? undefined : { height }}
       >
         <span className="text-[9px] font-mono text-muted-foreground tracking-[1px]">
           BUFFERING {productId} TICKS…
@@ -69,7 +70,7 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220 }:
   const pad = (max - min) * 0.08 || max * 0.001;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-3">
+    <div className={`bg-card border border-border rounded-lg p-3 flex flex-col ${fill ? 'h-full w-full min-h-0' : ''}`}>
       <div className="flex items-baseline justify-between mb-2 gap-2">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px]">
@@ -106,7 +107,7 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220 }:
           ))}
         </div>
       </div>
-      <div style={{ height }}>
+      <div className={fill ? 'flex-1 min-h-0' : ''} style={fill ? undefined : { height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <YAxis

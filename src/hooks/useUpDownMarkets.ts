@@ -6,13 +6,47 @@ interface UseUpDownMarketsOptions {
   pollInterval?: number;
 }
 
+const CACHE_KEY = 'updown:markets:v1';
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const PREF_KEY = 'updown:pref:v1';
+
+function loadCache(): { data: UpDownMarket[]; ts: number } | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.ts || !Array.isArray(parsed.data)) return null;
+    return parsed;
+  } catch { return null; }
+}
+function saveCache(data: UpDownMarket[]) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch { /* quota */ }
+}
+function loadPref(): { asset?: CryptoAsset; timeframe?: UpDownTimeframe } {
+  try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch { return {}; }
+}
+function savePref(p: { asset: CryptoAsset; timeframe: UpDownTimeframe }) {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
 export function useUpDownMarkets({ pollInterval = 120000 }: UseUpDownMarketsOptions = {}) {
-  const [allMarkets, setAllMarkets] = useState<UpDownMarket[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<CryptoAsset>('btc');
-  const [selectedTimeframe, setSelectedTimeframe] = useState<UpDownTimeframe>('5m');
-  const [loading, setLoading] = useState(true);
+  const cached = typeof window !== 'undefined' ? loadCache() : null;
+  const pref = typeof window !== 'undefined' ? loadPref() : {};
+  const [allMarkets, setAllMarkets] = useState<UpDownMarket[]>(cached?.data ?? []);
+  const [selectedAsset, setSelectedAssetState] = useState<CryptoAsset>(pref.asset ?? 'btc');
+  const [selectedTimeframe, setSelectedTimeframeState] = useState<UpDownTimeframe>(pref.timeframe ?? '5m');
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const setSelectedAsset = useCallback((a: CryptoAsset) => {
+    setSelectedAssetState(a);
+    savePref({ asset: a, timeframe: selectedTimeframe });
+  }, [selectedTimeframe]);
+  const setSelectedTimeframe = useCallback((t: UpDownTimeframe) => {
+    setSelectedTimeframeState(t);
+    savePref({ asset: selectedAsset, timeframe: t });
+  }, [selectedAsset]);
 
   const fetchAll = useCallback(async () => {
     abortRef.current?.abort();
@@ -45,13 +79,15 @@ export function useUpDownMarkets({ pollInterval = 120000 }: UseUpDownMarketsOpti
               prevPriceMap.set(m.eventSlug, { up: m.upPrice, down: m.downPrice });
             }
           }
-          return data.map((m: any) => {
+          const next = data.map((m: any) => {
             const cached = prevPriceMap.get(m.eventSlug);
             if (cached && (!m.upPrice || m.upPrice <= 0.02)) {
               return { ...m, upPrice: cached.up, downPrice: cached.down };
             }
             return m;
           });
+          saveCache(next);
+          return next;
         });
         setError(null);
       }
@@ -66,7 +102,8 @@ export function useUpDownMarkets({ pollInterval = 120000 }: UseUpDownMarketsOpti
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
-    let lastFetch = 0;
+    // Seed lastFetch from cache to avoid an immediate refetch on hydrate
+    let lastFetch = cached?.ts ?? 0;
 
     const start = () => {
       if (interval) return;

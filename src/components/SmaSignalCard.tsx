@@ -46,7 +46,7 @@ export function SmaSignalCard({ signal, upPrice, downPrice }: SmaSignalCardProps
   const ready = signal.fast != null && signal.slow != null;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-3 flex flex-col gap-3">
+    <div className="bg-card border border-border rounded-lg p-3 flex flex-col gap-2 h-full min-h-0 overflow-y-auto scrollbar-thin">
       <div className="flex items-center justify-between">
         <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px]">
           SMA CROSSOVER SIGNAL
