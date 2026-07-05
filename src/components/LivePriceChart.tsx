@@ -53,8 +53,8 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220, f
   if (series.length < 2) {
     return (
       <div
-        className="flex items-center justify-center bg-card border border-border rounded-lg"
-        style={{ height }}
+        className={`flex items-center justify-center bg-card border border-border rounded-lg ${fill ? 'h-full w-full' : ''}`}
+        style={fill ? undefined : { height }}
       >
         <span className="text-[9px] font-mono text-muted-foreground tracking-[1px]">
           BUFFERING {productId} TICKS…
