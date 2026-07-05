@@ -6,7 +6,7 @@ interface UseUpDownMarketsOptions {
   pollInterval?: number;
 }
 
-export function useUpDownMarkets({ pollInterval = 60000 }: UseUpDownMarketsOptions = {}) {
+export function useUpDownMarkets({ pollInterval = 120000 }: UseUpDownMarketsOptions = {}) {
   const [allMarkets, setAllMarkets] = useState<UpDownMarket[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<CryptoAsset>('btc');
   const [selectedTimeframe, setSelectedTimeframe] = useState<UpDownTimeframe>('5m');
@@ -65,11 +65,37 @@ export function useUpDownMarkets({ pollInterval = 60000 }: UseUpDownMarketsOptio
   }, []);
 
   useEffect(() => {
-    fetchAll();
-    const interval = setInterval(fetchAll, pollInterval);
-    return () => {
-      clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let lastFetch = 0;
+
+    const start = () => {
+      if (interval) return;
+      // Only fetch on (re)start if enough time has elapsed
+      if (Date.now() - lastFetch > pollInterval) {
+        fetchAll();
+        lastFetch = Date.now();
+      }
+      interval = setInterval(() => {
+        fetchAll();
+        lastFetch = Date.now();
+      }, pollInterval);
+    };
+    const stop = () => {
+      if (interval) { clearInterval(interval); interval = null; }
       abortRef.current?.abort();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
     };
   }, [fetchAll, pollInterval]);
 

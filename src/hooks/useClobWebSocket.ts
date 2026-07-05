@@ -154,18 +154,31 @@ export function useClobWebSocket(tokenIds: string[], options?: UseClobWebSocketO
     }
   }, [tokenIds, subscribe]);
 
-  // Connect on mount, disconnect on unmount
+  // Connect on mount, disconnect on unmount, pause on hidden tab
   useEffect(() => {
     currentTokenIds.current = tokenIds.filter(Boolean);
-    connect();
 
-    return () => {
+    const start = () => { if (!wsRef.current) connect(); };
+    const stop = () => {
       stopPing();
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (reconnectTimer.current) { clearTimeout(reconnectTimer.current); reconnectTimer.current = null; }
       if (wsRef.current) {
-        wsRef.current.close();
+        try { wsRef.current.onclose = null; wsRef.current.close(); } catch { /* ignore */ }
         wsRef.current = null;
       }
+      setState(prev => ({ ...prev, connected: false }));
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
     };
   }, []); // connect once
 

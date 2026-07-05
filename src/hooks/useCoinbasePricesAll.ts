@@ -3,8 +3,8 @@ import type { CryptoAsset } from '@/lib/updownTypes';
 import type { PricePoint } from './useCoinbasePrice';
 
 const WS_URL = 'wss://advanced-trade-ws.coinbase.com';
-const MAX_POINTS = 800;
-const FLUSH_MS = 60;
+const MAX_POINTS = 1500;
+const FLUSH_MS = 50;
 
 const ASSETS: CryptoAsset[] = ['btc', 'eth', 'sol', 'xrp'];
 const ASSET_TO_PRODUCT: Record<CryptoAsset, string> = {
@@ -114,14 +114,25 @@ export function useCoinbasePricesAll(): MultiPriceState {
   }, [scheduleFlush]);
 
   useEffect(() => {
-    connect();
-    return () => {
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+    const start = () => { if (!wsRef.current) connect(); };
+    const stop = () => {
+      if (reconnectTimer.current) { clearTimeout(reconnectTimer.current); reconnectTimer.current = null; }
+      if (flushTimerRef.current) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null; }
       if (wsRef.current) {
-        try { wsRef.current.close(); } catch { /* ignore */ }
+        try { wsRef.current.onclose = null; wsRef.current.close(); } catch { /* ignore */ }
         wsRef.current = null;
       }
+      setState(prev => ({ ...prev, connected: false }));
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
