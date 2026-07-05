@@ -8,7 +8,6 @@ import { SmaSignalCard } from '@/components/SmaSignalCard';
 import { ClobHeatmap } from '@/components/ClobHeatmap';
 import { PriceTape } from '@/components/PriceTape';
 import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
-import { useCoinbasePrice } from '@/hooks/useCoinbasePrice';
 import { useCoinbasePricesAll } from '@/hooks/useCoinbasePricesAll';
 import { computeSmaSignal } from '@/lib/smaSignal';
 
@@ -19,23 +18,30 @@ function extractTargetPrice(title: string): number | null {
   return isNaN(v) ? null : v;
 }
 
+const PRODUCT_LABEL: Record<string, string> = {
+  btc: 'BTC-USD', eth: 'ETH-USD', sol: 'SOL-USD', xrp: 'XRP-USD',
+};
+
 const Index = () => {
-  const upDown = useUpDownMarkets({ pollInterval: 20000 });
-  const coinbase = useCoinbasePrice(upDown.selectedAsset);
+  const upDown = useUpDownMarkets();
   const allPrices = useCoinbasePricesAll();
+
+  const selectedSeries = allPrices.series[upDown.selectedAsset] ?? [];
+  const selectedPrice = allPrices.prices[upDown.selectedAsset] ?? null;
+  const productId = PRODUCT_LABEL[upDown.selectedAsset];
 
   const target = upDown.activeMarket ? extractTargetPrice(upDown.activeMarket.eventTitle) : null;
   const signal = useMemo(
-    () => computeSmaSignal(coinbase.series, upDown.selectedTimeframe),
-    [coinbase.series, upDown.selectedTimeframe]
+    () => computeSmaSignal(selectedSeries, upDown.selectedTimeframe),
+    [selectedSeries, upDown.selectedTimeframe]
   );
 
   return (
     <div className="grid grid-rows-[44px_32px_1fr] h-screen overflow-hidden">
       <TopBar
-        spotPrice={coinbase.price}
+        spotPrice={selectedPrice}
         spotAsset={upDown.selectedAsset}
-        spotConnected={coinbase.connected}
+        spotConnected={allPrices.connected}
         clobConnected={upDown.clobConnected}
       />
 
@@ -70,8 +76,8 @@ const Index = () => {
             market={upDown.activeMarket}
             loading={upDown.loading}
             error={upDown.error}
-            liveSpotPrice={coinbase.price}
-            spotConnected={coinbase.connected}
+            liveSpotPrice={selectedPrice}
+            spotConnected={allPrices.connected}
             clobConnected={upDown.clobConnected}
             clobLastUpdate={upDown.clobLastUpdate}
           />
@@ -86,12 +92,13 @@ const Index = () => {
         <main className="overflow-y-auto scrollbar-thin p-4 grid grid-cols-[1fr_360px] gap-4 auto-rows-min">
           <div className="col-span-2">
             <LivePriceChart
-              series={coinbase.series}
-              productId={coinbase.productId}
+              series={selectedSeries}
+              productId={productId}
               targetPrice={target}
               height={260}
             />
           </div>
+
 
           <div className="col-span-2 lg:col-span-1">
             <ClobHeatmap
