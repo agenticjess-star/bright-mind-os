@@ -102,7 +102,8 @@ export function useUpDownMarkets({ pollInterval = 120000 }: UseUpDownMarketsOpti
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
-    let lastFetch = 0;
+    // Seed lastFetch from cache to avoid an immediate refetch on hydrate
+    let lastFetch = cached?.ts ?? 0;
 
     const start = () => {
       if (interval) return;
