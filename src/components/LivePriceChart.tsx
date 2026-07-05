@@ -24,7 +24,7 @@ function fmtUsd(v: number): string {
   return `$${v.toFixed(4)}`;
 }
 
-export function LivePriceChart({ series, productId, targetPrice, height = 220 }: LivePriceChartProps) {
+export function LivePriceChart({ series, productId, targetPrice, height = 220, fill = false }: LivePriceChartProps) {
   const [windowMs, setWindowMs] = useState<number | null>(60_000);
 
   const windowed = useMemo(() => {
