@@ -70,7 +70,7 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220, f
   const pad = (max - min) * 0.08 || max * 0.001;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-3">
+    <div className={`bg-card border border-border rounded-lg p-3 flex flex-col ${fill ? 'h-full w-full min-h-0' : ''}`}>
       <div className="flex items-baseline justify-between mb-2 gap-2">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px]">
