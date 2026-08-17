@@ -6,8 +6,14 @@ export interface UpDownMarket {
   eventSlug: string;
   eventTitle: string;
   endDate: string;
+  /** best ASK for the Up outcome — what it costs to buy Up */
   upPrice: number | null;
+  /** best ASK for the Down outcome */
   downPrice: number | null;
+  /** best BID (what you'd receive selling) */
+  upBid?: number | null;
+  downBid?: number | null;
+
   resolved?: boolean;
   outcome?: string | null; // 'Up' | 'Down' | null
   markets: {
