@@ -1,186 +1,152 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { quoteFromBook, type BookQuote } from '@/lib/polymarket';
 
 const CLOB_WS_URL = 'wss://ws-subscriptions-clob.polymarket.com/ws/market';
-const CLOB_PING_INTERVAL = 10000; // 10s heartbeat per docs
-
-export interface ClobPriceUpdate {
-  tokenId: string;
-  price: number;
-  timestamp: number;
-}
+const PING_INTERVAL = 10000; // required heartbeat
+const FLUSH_MS = 150;        // batch state updates
 
 export interface ClobWebSocketState {
   connected: boolean;
-  prices: Record<string, number>;
+  /** best bid / ask / mid per CLOB token id */
+  quotes: Record<string, BookQuote>;
   lastUpdate: number | null;
 }
 
-interface UseClobWebSocketOptions {
-  onNewMarket?: (event: any) => void;
-}
-
 /**
- * Polymarket CLOB Market WebSocket — v3
- * - PING heartbeat every 10s (required by docs)
- * - best_bid_ask event support for cleaner price feed
- * - Dynamic subscribe/unsubscribe without reconnecting
+ * Polymarket CLOB market channel (public, no auth).
+ *
+ * Real event types on this socket (verified live):
+ *   `book`         — full order-book snapshot on subscribe / large change
+ *   `price_change` — { price_changes: [{ asset_id, best_bid, best_ask, ... }] }
+ *   `last_trade_price`
+ *
+ * We maintain best bid/ask per token from those two, batched to one state
+ * update every 150ms so heavy books don't thrash React.
  */
-export function useClobWebSocket(tokenIds: string[], options?: UseClobWebSocketOptions) {
+export function useClobWebSocket(tokenIds: string[]) {
   const [state, setState] = useState<ClobWebSocketState>({
     connected: false,
-    prices: {},
+    quotes: {},
     lastUpdate: null,
   });
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<Record<string, BookQuote>>({});
   const currentTokenIds = useRef<string[]>([]);
   const reconnectAttempts = useRef(0);
-  const onNewMarketRef = useRef(options?.onNewMarket);
-  onNewMarketRef.current = options?.onNewMarket;
-  const maxReconnectDelay = 30000;
 
-  const stopPing = useCallback(() => {
-    if (pingTimer.current) {
-      clearInterval(pingTimer.current);
-      pingTimer.current = null;
-    }
+  const flush = useCallback(() => {
+    flushTimer.current = null;
+    const batch = pending.current;
+    pending.current = {};
+    if (Object.keys(batch).length === 0) return;
+    setState(prev => ({ ...prev, quotes: { ...prev.quotes, ...batch }, lastUpdate: Date.now() }));
   }, []);
 
-  const startPing = useCallback((ws: WebSocket) => {
-    stopPing();
-    pingTimer.current = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send('PING');
-      }
-    }, CLOB_PING_INTERVAL);
-  }, [stopPing]);
+  const queue = useCallback((tokenId: string, quote: BookQuote) => {
+    pending.current[tokenId] = quote;
+    if (!flushTimer.current) flushTimer.current = setTimeout(flush, FLUSH_MS);
+  }, [flush]);
+
+  const stopPing = useCallback(() => {
+    if (pingTimer.current) { clearInterval(pingTimer.current); pingTimer.current = null; }
+  }, []);
 
   const subscribe = useCallback((ws: WebSocket, ids: string[]) => {
     if (ids.length === 0 || ws.readyState !== WebSocket.OPEN) return;
-    const msg = {
-      assets_ids: ids,
-      type: 'market',
-      custom_feature_enabled: true,
-    };
-    console.log('[CLOB-WS] Subscribing to', ids.length, 'tokens');
-    ws.send(JSON.stringify(msg));
+    ws.send(JSON.stringify({ assets_ids: ids, type: 'market' }));
   }, []);
 
   const connect = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
+    if (wsRef.current) { try { wsRef.current.close(); } catch { /* noop */ } }
     stopPing();
 
     const ws = new WebSocket(CLOB_WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('[CLOB-WS] Connected');
       reconnectAttempts.current = 0;
       setState(prev => ({ ...prev, connected: true }));
       subscribe(ws, currentTokenIds.current);
-      startPing(ws);
+      stopPing();
+      pingTimer.current = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.send('PING');
+      }, PING_INTERVAL);
     };
 
     ws.onmessage = (event) => {
-      // Ignore PONG
       if (event.data === 'PONG') return;
+      let msgs: any;
+      try { msgs = JSON.parse(event.data); } catch { return; }
 
-      try {
-        const msgs = JSON.parse(event.data);
-        const updates = Array.isArray(msgs) ? msgs : [msgs];
-
-        setState(prev => {
-          let changed = false;
-          const newPrices = { ...prev.prices };
-
-          for (const msg of updates) {
-            // ONLY use best_bid_ask — the cleanest, most reliable price source.
-            // price_change and last_trade_price can carry misleading 1¢ values
-            // from micro-trades or stale order books.
-            if (msg.event_type === 'best_bid_ask' && msg.asset_id && msg.best_bid != null) {
-              const price = typeof msg.best_bid === 'string' ? parseFloat(msg.best_bid) : msg.best_bid;
-              if (!isNaN(price) && price > 0.01) {
-                newPrices[msg.asset_id] = price;
-                changed = true;
-              }
-            }
-
-            // new_market event
-            if (msg.event_type === 'new_market') {
-              console.log('[CLOB-WS] New market detected:', msg);
-              onNewMarketRef.current?.(msg);
-            }
+      for (const msg of Array.isArray(msgs) ? msgs : [msgs]) {
+        if (msg?.event_type === 'book' && msg.asset_id) {
+          queue(msg.asset_id, quoteFromBook(msg.bids, msg.asks));
+        } else if (msg?.event_type === 'price_change' && Array.isArray(msg.price_changes)) {
+          for (const pc of msg.price_changes) {
+            if (!pc?.asset_id) continue;
+            const bid = pc.best_bid != null ? parseFloat(pc.best_bid) : null;
+            const ask = pc.best_ask != null ? parseFloat(pc.best_ask) : null;
+            const okBid = Number.isFinite(bid as number) ? (bid as number) : null;
+            const okAsk = Number.isFinite(ask as number) ? (ask as number) : null;
+            if (okBid == null && okAsk == null) continue;
+            queue(pc.asset_id, {
+              bid: okBid,
+              ask: okAsk,
+              mid: okBid != null && okAsk != null ? (okBid + okAsk) / 2 : (okAsk ?? okBid),
+            });
           }
-
-          if (!changed) return prev;
-          return { ...prev, prices: newPrices, lastUpdate: Date.now() };
-        });
-      } catch {
-        // ignore non-JSON
+        }
       }
-    };
-
-    ws.onerror = () => {
-      console.warn('[CLOB-WS] Error');
     };
 
     ws.onclose = () => {
       setState(prev => ({ ...prev, connected: false }));
       stopPing();
-      const delay = Math.min(1000 * 2 ** reconnectAttempts.current, maxReconnectDelay);
+      if (document.visibilityState !== 'visible') return;
+      const delay = Math.min(1000 * 2 ** reconnectAttempts.current, 30000);
       reconnectAttempts.current++;
-      console.log(`[CLOB-WS] Reconnecting in ${delay}ms`);
       reconnectTimer.current = setTimeout(connect, delay);
     };
-  }, [subscribe, startPing, stopPing]);
+  }, [subscribe, stopPing, queue]);
 
-  // Dynamic subscribe/unsubscribe when tokenIds change (no reconnect needed)
+  // Re-subscribe in place when the token set changes (no reconnect).
   useEffect(() => {
+    const next = Array.from(new Set(tokenIds.filter(Boolean)));
     const prev = currentTokenIds.current;
-    const next = tokenIds.filter(Boolean);
-
-    const same = prev.length === next.length && prev.every((id, i) => id === next[i]);
-    if (same) return;
-
+    if (prev.length === next.length && prev.every((id, i) => id === next[i])) return;
     currentTokenIds.current = next;
-
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      subscribe(wsRef.current, next);
-    }
+    if (wsRef.current?.readyState === WebSocket.OPEN) subscribe(wsRef.current, next);
   }, [tokenIds, subscribe]);
 
-  // Connect on mount, disconnect on unmount, pause on hidden tab
+  // Connect while the tab is visible; fully disconnect when hidden.
   useEffect(() => {
-    currentTokenIds.current = tokenIds.filter(Boolean);
-
     const start = () => { if (!wsRef.current) connect(); };
     const stop = () => {
       stopPing();
       if (reconnectTimer.current) { clearTimeout(reconnectTimer.current); reconnectTimer.current = null; }
+      if (flushTimer.current) { clearTimeout(flushTimer.current); flushTimer.current = null; }
       if (wsRef.current) {
-        try { wsRef.current.onclose = null; wsRef.current.close(); } catch { /* ignore */ }
+        try { wsRef.current.onclose = null; wsRef.current.close(); } catch { /* noop */ }
         wsRef.current = null;
       }
       setState(prev => ({ ...prev, connected: false }));
     };
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') start();
-      else stop();
+      if (document.visibilityState === 'visible') start(); else stop();
     };
 
     if (document.visibilityState === 'visible') start();
     document.addEventListener('visibilitychange', onVisibility);
-
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       stop();
     };
-  }, []); // connect once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return state;
 }
