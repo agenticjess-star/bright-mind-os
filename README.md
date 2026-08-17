@@ -80,7 +80,7 @@ A confident-looking metric that isn't grounded in a real outcome is worse than n
 `(selectedAsset, selectedTimeframe)` is the single source of truth. It drives:
 - `useCoinbasePrice` subscription (asset → `BTC-USD` / `ETH-USD` / `SOL-USD` / `XRP-USD`).
 - Filter on `useUpDownMarkets` to pick the active event.
-- `eventSlug` passed to `PolymarketEmbed`.
+- Highlighted row/column in `ClobHeatmap` (all timeframes for a coin, or all coins for a timeframe).
 - SMA window sizing in `computeSmaSignal`.
 
 ---
@@ -168,11 +168,15 @@ src/
 │  ├─ EventHistory.tsx          # discovered markets list
 │  ├─ LivePriceChart.tsx        # Coinbase tick chart w/ target reference line
 │  ├─ SmaSignalCard.tsx         # lean, leanProb, spread, last cross, edge
-│  └─ PolymarketEmbed.tsx       # contract chart iframe + fallback
+│  ├─ ClobHeatmap.tsx           # live best-ask grid, cheapest aligned contract
+│  └─ PriceTape.tsx             # rotating live spot tape
+├─ lib/
+│  └─ polymarket.ts             # slug plan, batched Gamma + CLOB book fetch
 ├─ hooks/
-│  ├─ useCoinbasePrice.ts       # single persistent Coinbase WS
-│  ├─ useClobWebSocket.ts       # Polymarket CLOB WS
-│  └─ useUpDownMarkets.ts       # discovery + auto-rotation + price merge
+│  ├─ useCoinbasePricesAll.ts   # single persistent Coinbase WS (all assets)
+│  ├─ useClobWebSocket.ts       # Polymarket CLOB WS (book + price_change)
+│  └─ useUpDownMarkets.ts       # discovery + auto-rotation + quote merge
+
 └─ lib/
    ├─ smaSignal.ts              # SMA crossover + edge + agreement
    └─ updownTypes.ts            # asset/timeframe types
