@@ -5,7 +5,10 @@ import type { PricePoint } from '@/hooks/useCoinbasePrice';
 interface LivePriceChartProps {
   series: PricePoint[];
   productId: string;
-  targetPrice?: number | null;
+  /** spot price at the contract's window open — the price to beat */
+  strikePrice?: number | null;
+  support?: number | null;
+  resistance?: number | null;
   height?: number;
   fill?: boolean;
 }
@@ -24,13 +27,24 @@ function fmtUsd(v: number): string {
   return `$${v.toFixed(4)}`;
 }
 
-export function LivePriceChart({ series, productId, targetPrice, height = 220, fill = false }: LivePriceChartProps) {
+function fmtPct(v: number): string {
+  return `${v >= 0 ? '+' : ''}${v.toFixed(3)}%`;
+}
+
+export function LivePriceChart({
+  series,
+  productId,
+  strikePrice,
+  support,
+  resistance,
+  height = 220,
+  fill = false,
+}: LivePriceChartProps) {
   const [windowMs, setWindowMs] = useState<number | null>(60_000);
 
   const windowed = useMemo(() => {
     if (windowMs == null || series.length === 0) return series;
     const cutoff = series[series.length - 1].ts - windowMs;
-    // binary search-ish; series is chronological
     let i = 0;
     while (i < series.length && series[i].ts < cutoff) i++;
     return series.slice(Math.max(0, i - 1));
@@ -50,6 +64,14 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220, f
   const trendUp = (stats?.change ?? 0) >= 0;
   const strokeColor = trendUp ? 'hsl(var(--chart-up))' : 'hsl(var(--destructive))';
 
+  const spot = stats?.last ?? null;
+  /** signed % move still required for the price to cross the strike (positive = must rise) */
+  const gapPct = spot != null && strikePrice != null && spot !== 0
+    ? ((strikePrice - spot) / spot) * 100
+    : null;
+  const distTo = (level: number | null | undefined) =>
+    spot != null && level != null && spot !== 0 ? ((level - spot) / spot) * 100 : null;
+
   if (series.length < 2) {
     return (
       <div
@@ -63,10 +85,17 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220, f
     );
   }
 
-  // Y-axis padding so the line doesn't kiss the edges
   const prices = windowed.map(p => p.price);
-  const min = Math.min(...prices, targetPrice ?? Infinity);
-  const max = Math.max(...prices, targetPrice ?? -Infinity);
+  const extras = [strikePrice, support, resistance].filter(
+    (v): v is number => typeof v === 'number' && Number.isFinite(v),
+  );
+  // Only stretch the axis for levels that are actually near the visible action.
+  const rawMin = Math.min(...prices);
+  const rawMax = Math.max(...prices);
+  const span = Math.max(rawMax - rawMin, rawMax * 0.0004);
+  const near = extras.filter(v => v > rawMin - span * 3 && v < rawMax + span * 3);
+  const min = Math.min(rawMin, ...near);
+  const max = Math.max(rawMax, ...near);
   const pad = (max - min) * 0.08 || max * 0.001;
 
   return (
@@ -107,13 +136,53 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220, f
           ))}
         </div>
       </div>
+
+      {/* Level strip: price to beat + the distance still to cover */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2 text-[9px] font-mono tracking-[1px]">
+        {strikePrice != null ? (
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-muted-foreground">TO BEAT</span>
+            <span className="text-warning tabular-nums">{fmtUsd(strikePrice)}</span>
+            {gapPct != null && (
+              <span
+                className={`px-1 py-0.5 rounded tabular-nums ${
+                  gapPct > 0
+                    ? 'bg-destructive/15 text-destructive'
+                    : 'bg-chart-up/15 text-chart-up'
+                }`}
+                title={gapPct > 0 ? 'Up needs this much of a rally' : 'Up is already clear by this much'}
+              >
+                {gapPct > 0 ? `UP NEEDS ${fmtPct(gapPct)}` : `UP CLEAR BY ${fmtPct(-gapPct)}`}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-muted-foreground/60">TO BEAT —</span>
+        )}
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-muted-foreground">RES</span>
+          <span className="text-foreground/80 tabular-nums">
+            {resistance != null ? fmtUsd(resistance) : '—'}
+          </span>
+          {distTo(resistance) != null && (
+            <span className="text-muted-foreground tabular-nums">{fmtPct(distTo(resistance)!)}</span>
+          )}
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-muted-foreground">SUP</span>
+          <span className="text-foreground/80 tabular-nums">
+            {support != null ? fmtUsd(support) : '—'}
+          </span>
+          {distTo(support) != null && (
+            <span className="text-muted-foreground tabular-nums">{fmtPct(distTo(support)!)}</span>
+          )}
+        </div>
+      </div>
+
       <div className={fill ? 'flex-1 min-h-0' : ''} style={fill ? undefined : { height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <YAxis
-              domain={[min - pad, max + pad]}
-              hide
-            />
+            <YAxis domain={[min - pad, max + pad]} hide />
             <Tooltip
               cursor={{ stroke: 'hsl(var(--border))' }}
               contentStyle={{
@@ -127,14 +196,46 @@ export function LivePriceChart({ series, productId, targetPrice, height = 220, f
               labelFormatter={(ts: number) => new Date(ts).toLocaleTimeString()}
               formatter={(v: number) => [fmtUsd(v), 'Price']}
             />
-            {targetPrice != null && (
+            {resistance != null && near.includes(resistance) && (
               <ReferenceLine
-                y={targetPrice}
-                stroke="hsl(var(--warning))"
-                strokeDasharray="3 3"
+                y={resistance}
+                stroke="hsl(var(--destructive))"
+                strokeDasharray="2 4"
+                strokeOpacity={0.6}
                 strokeWidth={1}
                 label={{
-                  value: `TARGET ${fmtUsd(targetPrice)}`,
+                  value: `RES ${fmtUsd(resistance)}`,
+                  position: 'insideTopLeft',
+                  fill: 'hsl(var(--destructive))',
+                  fontSize: 9,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              />
+            )}
+            {support != null && near.includes(support) && (
+              <ReferenceLine
+                y={support}
+                stroke="hsl(var(--chart-up))"
+                strokeDasharray="2 4"
+                strokeOpacity={0.6}
+                strokeWidth={1}
+                label={{
+                  value: `SUP ${fmtUsd(support)}`,
+                  position: 'insideBottomLeft',
+                  fill: 'hsl(var(--chart-up))',
+                  fontSize: 9,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              />
+            )}
+            {strikePrice != null && (
+              <ReferenceLine
+                y={strikePrice}
+                stroke="hsl(var(--warning))"
+                strokeDasharray="3 3"
+                strokeWidth={1.25}
+                label={{
+                  value: `TO BEAT ${fmtUsd(strikePrice)}`,
                   position: 'insideTopRight',
                   fill: 'hsl(var(--warning))',
                   fontSize: 9,

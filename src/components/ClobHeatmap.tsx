@@ -6,10 +6,14 @@ import { computeSmaSignal, type Lean } from '@/lib/smaSignal';
 import type { PricePoint } from '@/hooks/useCoinbasePrice';
 
 type Axis = 'coin' | 'timeframe';
+type SideFilter = 'auto' | 'UP' | 'DOWN';
 
 interface ClobHeatmapProps {
   allMarkets: UpDownMarket[];
   seriesByAsset: Record<CryptoAsset, PricePoint[]>;
+  /** spot price at the contract's window open, keyed by eventId */
+  strikes: Record<string, number>;
+  spotByAsset: Record<CryptoAsset, number | null>;
   selectedAsset: CryptoAsset;
   selectedTimeframe: UpDownTimeframe;
   onSelectAsset: (a: CryptoAsset) => void;
@@ -25,40 +29,51 @@ interface Row {
   downPrice: number | null;
   lean: Lean;
   leanProb: number;
-  alignedPrice: number | null; // price on the side that matches the lean
+  /** side this row is judged on: the SMA lean, or the forced filter */
+  side: Lean;
+  alignedPrice: number | null; // price on the side being judged
+  /** % move still needed for that side to win (0 = already winning), null = unknown */
+  needPct: number | null;
+  strike: number | null;
+  spot: number | null;
   ready: boolean;
 }
 
 export function ClobHeatmap({
   allMarkets,
   seriesByAsset,
+  strikes,
+  spotByAsset,
   selectedAsset,
   selectedTimeframe,
   onSelectAsset,
   onSelectTimeframe,
 }: ClobHeatmapProps) {
   const [axis, setAxis] = useState<Axis>('coin');
+  const [side, setSide] = useState<SideFilter>('auto');
 
   const rows = useMemo<Row[]>(() => {
+    const ctx = { allMarkets, seriesByAsset, strikes, spotByAsset, side };
     if (axis === 'coin') {
-      return UPDOWN_TIMEFRAMES.map(tf => buildRow(selectedAsset, tf.value, allMarkets, seriesByAsset, tf.label));
+      return UPDOWN_TIMEFRAMES.map(tf => buildRow(selectedAsset, tf.value, tf.label, ctx));
     }
-    return CRYPTO_ASSETS.map(a => buildRow(a.value, selectedTimeframe, allMarkets, seriesByAsset, a.label));
-  }, [axis, allMarkets, seriesByAsset, selectedAsset, selectedTimeframe]);
+    return CRYPTO_ASSETS.map(a => buildRow(a.value, selectedTimeframe, a.label, ctx));
+  }, [axis, allMarkets, seriesByAsset, strikes, spotByAsset, side, selectedAsset, selectedTimeframe]);
 
-  // Best value = lowest priced contract on the side aligned with its lean
+  // Best value = cheapest contract per unit of work required.
+  // score = ask price × (1 + % move still needed) → low price AND short distance wins.
   const bestKey = useMemo(() => {
-    const candidates = rows.filter(r => r.alignedPrice != null && r.lean !== 'NEUTRAL');
+    const candidates = rows.filter(r => r.alignedPrice != null && r.side !== 'NEUTRAL');
     if (candidates.length === 0) return null;
-    return candidates.reduce((min, r) =>
-      r.alignedPrice! < (min.alignedPrice ?? Infinity) ? r : min, candidates[0]).key;
+    const score = (r: Row) => r.alignedPrice! * (1 + Math.max(r.needPct ?? 0, 0));
+    return candidates.reduce((best, r) => (score(r) < score(best) ? r : best), candidates[0]).key;
   }, [rows]);
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2 shrink-0">
         <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px]">
-          CLOB PRICE HEATMAP · CHEAPEST ALIGNED CONTRACT
+          CLOB PRICES · % MOVE NEEDED TO BEAT
         </span>
         <div className="flex gap-1">
           <AxisToggle active={axis === 'coin'} onClick={() => setAxis('coin')}>BY COIN</AxisToggle>
@@ -66,8 +81,8 @@ export function ClobHeatmap({
         </div>
       </div>
 
-      {/* Selector pill row */}
-      <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1 shrink-0">
+      {/* Selector pill row + side filter */}
+      <div className="px-3 py-2 border-b border-border flex flex-wrap items-center gap-1 shrink-0">
         {axis === 'coin'
           ? CRYPTO_ASSETS.map(a => (
               <Pill key={a.value} active={selectedAsset === a.value} onClick={() => onSelectAsset(a.value)}>
@@ -79,13 +94,22 @@ export function ClobHeatmap({
                 {tf.label}
               </Pill>
             ))}
+        <span className="ml-auto flex items-center gap-1">
+          <span className="text-[8px] font-mono text-muted-foreground tracking-[1.5px]">SIDE</span>
+          {(['auto', 'UP', 'DOWN'] as SideFilter[]).map(s => (
+            <Pill key={s} active={side === s} onClick={() => setSide(s)}>
+              {s === 'auto' ? 'SMA' : s}
+            </Pill>
+          ))}
+        </span>
       </div>
 
       {/* Header */}
-      <div className="grid grid-cols-[80px_1fr_1fr_72px] px-3 py-1.5 border-b border-border text-[8px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
-        <span>{axis === 'coin' ? 'TIMEFRAME' : 'ASSET'}</span>
+      <div className="grid grid-cols-[64px_1fr_1fr_92px_60px] px-3 py-1.5 border-b border-border text-[8px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
+        <span>{axis === 'coin' ? 'TF' : 'ASSET'}</span>
         <span className="text-center">UP ¢</span>
         <span className="text-center">DOWN ¢</span>
+        <span className="text-right">% TO BEAT</span>
         <span className="text-right">LEAN</span>
       </div>
 
@@ -100,28 +124,45 @@ export function ClobHeatmap({
 
       <div className="px-3 py-2 border-t border-border flex items-center gap-3 text-[8px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
         <LegendDot className="bg-chart-up/70" /> ALIGNED
-        <LegendDot className="bg-amber-400/80 ring-1 ring-amber-300/60" /> BEST VALUE
+        <LegendDot className="bg-amber-400/80 ring-1 ring-amber-300/60" /> BEST · PRICE × DISTANCE
       </div>
     </div>
   );
 }
 
+interface RowCtx {
+  allMarkets: UpDownMarket[];
+  seriesByAsset: Record<CryptoAsset, PricePoint[]>;
+  strikes: Record<string, number>;
+  spotByAsset: Record<CryptoAsset, number | null>;
+  side: SideFilter;
+}
+
 function buildRow(
   asset: CryptoAsset,
   timeframe: UpDownTimeframe,
-  allMarkets: UpDownMarket[],
-  seriesByAsset: Record<CryptoAsset, PricePoint[]>,
   label: string,
+  ctx: RowCtx,
 ): Row {
-  const mkt = allMarkets.find(m => m.asset === asset && m.timeframe === timeframe && !m.resolved)
-    ?? allMarkets.find(m => m.asset === asset && m.timeframe === timeframe)
+  const mkt = ctx.allMarkets.find(m => m.asset === asset && m.timeframe === timeframe && !m.resolved)
+    ?? ctx.allMarkets.find(m => m.asset === asset && m.timeframe === timeframe)
     ?? null;
-  const signal = computeSmaSignal(seriesByAsset[asset] ?? [], timeframe);
+  const signal = computeSmaSignal(ctx.seriesByAsset[asset] ?? [], timeframe);
   const upPrice = mkt?.upPrice ?? null;
   const downPrice = mkt?.downPrice ?? null;
-  let alignedPrice: number | null = null;
-  if (signal.lean === 'UP') alignedPrice = upPrice;
-  else if (signal.lean === 'DOWN') alignedPrice = downPrice;
+
+  const side: Lean = ctx.side === 'auto' ? signal.lean : ctx.side;
+  const alignedPrice = side === 'UP' ? upPrice : side === 'DOWN' ? downPrice : null;
+
+  const strike = mkt ? ctx.strikes[mkt.eventId] ?? null : null;
+  const spot = ctx.spotByAsset[asset] ?? null;
+  // Signed distance from spot to the strike, in %. Positive = spot below strike.
+  const gapPct = strike != null && spot != null && spot !== 0 ? ((strike - spot) / spot) * 100 : null;
+  let needPct: number | null = null;
+  if (gapPct != null && side !== 'NEUTRAL') {
+    needPct = side === 'UP' ? Math.max(gapPct, 0) : Math.max(-gapPct, 0);
+  }
+
   return {
     key: `${asset}-${timeframe}`,
     label,
@@ -131,7 +172,11 @@ function buildRow(
     downPrice,
     lean: signal.lean,
     leanProb: signal.leanProb,
+    side,
     alignedPrice,
+    needPct,
+    strike,
+    spot,
     ready: signal.fast != null,
   };
 }
