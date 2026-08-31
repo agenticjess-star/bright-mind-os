@@ -229,6 +229,7 @@ function toMarket(event: any, target: SlugTarget, now: number): UpDownMarket {
     eventSlug: event.slug ?? target.slug,
     eventTitle: event.title ?? '',
     endDate: event.endDate ?? event.end_date ?? '',
+    windowStart: windowStartIso(event, markets[0], target, endMs),
     upPrice: null,
     downPrice: null,
     upBid: null,
