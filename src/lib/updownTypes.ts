@@ -6,6 +6,8 @@ export interface UpDownMarket {
   eventSlug: string;
   eventTitle: string;
   endDate: string;
+  /** ISO timestamp of the window open — the moment the "price to beat" is set */
+  windowStart?: string;
   /** best ASK for the Up outcome — what it costs to buy Up */
   upPrice: number | null;
   /** best ASK for the Down outcome */
