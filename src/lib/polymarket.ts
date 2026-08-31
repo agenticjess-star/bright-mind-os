@@ -208,6 +208,27 @@ export function eventTokenIds(market: UpDownMarket): { up: string | null; down: 
   return { up: ids[0] ?? null, down: ids[1] ?? null };
 }
 
+/** Window duration in seconds per timeframe (fallback when the API omits the start). */
+const TF_SECONDS: Record<string, number> = {
+  '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, daily: 86400,
+};
+
+/**
+ * When the window opened — Polymarket exposes `eventStartTime` on crypto
+ * up/down markets; otherwise derive it from endDate minus the window length.
+ */
+function windowStartIso(event: any, market: any, target: SlugTarget, endMs: number): string | undefined {
+  const raw = market?.eventStartTime ?? event?.eventStartTime;
+  if (typeof raw === 'string' && !Number.isNaN(new Date(raw).getTime())) {
+    return new Date(raw).toISOString();
+  }
+  const secs = TF_SECONDS[target.timeframe];
+  if (Number.isFinite(endMs) && endMs > 0 && secs) {
+    return new Date(endMs - secs * 1000).toISOString();
+  }
+  return undefined;
+}
+
 function toMarket(event: any, target: SlugTarget, now: number): UpDownMarket {
   const endMs = new Date(event.endDate || event.end_date || 0).getTime();
   const resolved = !!event.closed || (Number.isFinite(endMs) && endMs <= now);
