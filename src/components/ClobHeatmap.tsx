@@ -277,7 +277,7 @@ function AxisToggle({ active, onClick, children }: { active: boolean; onClick: (
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-0.5 rounded text-[9px] font-mono tracking-[1.5px] border transition-colors ${
+      className={`px-2 py-1 rounded text-[9px] font-mono tracking-[1.5px] border transition-colors ${
         active
           ? 'bg-primary/15 text-primary border-primary/40'
           : 'bg-secondary/40 text-muted-foreground border-transparent hover:text-foreground'
@@ -292,7 +292,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-colors ${
+      className={`px-2.5 py-1.5 rounded text-[10px] font-mono font-medium border transition-colors ${
         active
           ? 'bg-primary/15 text-primary border-primary/40'
           : 'bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground'

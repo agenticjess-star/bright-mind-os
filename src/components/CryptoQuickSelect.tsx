@@ -25,7 +25,7 @@ export function CryptoQuickSelect({
             <button
               key={a.value}
               onClick={() => onAssetChange(a.value)}
-              className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium transition-all ${
+              className={`px-2.5 py-1.5 rounded text-[10px] font-mono font-medium transition-all ${
                 isActive
                   ? 'bg-primary/15 text-primary border border-primary/30'
                   : 'bg-secondary/50 text-muted-foreground border border-transparent hover:bg-secondary hover:text-foreground'
@@ -47,7 +47,7 @@ export function CryptoQuickSelect({
             <button
               key={tf.value}
               onClick={() => onTimeframeChange(tf.value)}
-              className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium transition-all ${
+              className={`px-2.5 py-1.5 rounded text-[10px] font-mono font-medium transition-all ${
                 isActive
                   ? 'bg-primary/15 text-primary border border-primary/30'
                   : 'bg-secondary/50 text-muted-foreground border border-transparent hover:bg-secondary hover:text-foreground'
