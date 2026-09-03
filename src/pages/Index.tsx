@@ -97,7 +97,9 @@ const Index = () => {
             <LivePriceChart
               series={selectedSeries}
               productId={productId}
-              targetPrice={target}
+              strikePrice={strikePrice}
+              support={levels.support}
+              resistance={levels.resistance}
               fill
             />
           </div>
