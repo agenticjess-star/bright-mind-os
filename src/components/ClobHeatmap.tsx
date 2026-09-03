@@ -188,7 +188,7 @@ function HeatRow({ row, isBest }: { row: Row; isBest: boolean }) {
   return (
     <motion.div
       layout
-      className={`grid grid-cols-[80px_1fr_1fr_72px] px-3 py-2 items-center transition-colors ${
+      className={`grid grid-cols-[64px_1fr_1fr_92px_60px] px-3 py-2 items-center transition-colors ${
         isBest ? 'bg-amber-400/[0.07]' : 'hover:bg-secondary/30'
       }`}
     >
