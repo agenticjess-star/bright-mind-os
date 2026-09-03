@@ -96,8 +96,8 @@ const Index = () => {
         </aside>
 
         {/* Workspace: chart on top, heatmap + SMA on bottom */}
-        <main className="grid grid-rows-[minmax(0,3fr)_minmax(0,4fr)] gap-3 p-3 min-h-0 min-w-0 overflow-hidden">
-          <div className="min-h-0 min-w-0">
+        <main className="flex flex-col md:grid md:grid-rows-[minmax(0,3fr)_minmax(0,4fr)] gap-3 p-2 md:p-3 min-h-0 min-w-0 overflow-hidden">
+          <div className={`min-h-[200px] md:min-h-0 min-w-0 ${tab === 'chart' ? 'flex-1' : 'hidden'} md:block`}>
             <LivePriceChart
               series={selectedSeries}
               productId={productId}
@@ -108,8 +108,12 @@ const Index = () => {
             />
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-3 min-h-0 min-w-0">
-            <div className="min-h-0 min-w-0">
+          <div
+            className={`flex-1 flex-col md:grid md:grid-cols-[minmax(0,1fr)_320px] lg:md:grid-cols-[minmax(0,1fr)_360px] gap-3 min-h-0 min-w-0 ${
+              tab === 'grid' ? 'flex' : 'hidden'
+            } md:grid`}
+          >
+            <div className="flex-1 md:flex-none min-h-0 min-w-0">
               <ClobHeatmap
                 allMarkets={upDown.allMarketsRaw}
                 seriesByAsset={allPrices.series}
@@ -121,7 +125,7 @@ const Index = () => {
                 onSelectTimeframe={upDown.setSelectedTimeframe}
               />
             </div>
-            <div className="min-h-0 min-w-0">
+            <div className="shrink-0 md:min-h-0 min-w-0">
               <SmaSignalCard
                 signal={signal}
                 upPrice={upDown.activeMarket?.upPrice ?? null}
@@ -131,6 +135,23 @@ const Index = () => {
           </div>
         </main>
       </div>
+
+      {/* Mobile tab bar */}
+      <nav className="md:hidden grid grid-cols-3 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+        {TABS.map(t => (
+          <button
+            key={t.value}
+            onClick={() => setTab(t.value)}
+            className={`py-3 text-[10px] font-mono tracking-[1.5px] transition-colors ${
+              tab === t.value
+                ? 'text-primary border-t-2 border-primary -mt-px'
+                : 'text-muted-foreground'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };
