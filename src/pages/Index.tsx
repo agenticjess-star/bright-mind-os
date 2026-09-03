@@ -33,7 +33,7 @@ const Index = () => {
   );
 
   return (
-    <div className="grid grid-rows-[44px_32px_minmax(0,1fr)] h-screen w-screen overflow-hidden bg-background">
+    <div className="grid grid-rows-[44px_32px_minmax(0,1fr)_auto] md:grid-rows-[44px_32px_minmax(0,1fr)] h-[100dvh] w-full overflow-hidden bg-background">
       <TopBar
         spotPrice={selectedPrice}
         spotAsset={upDown.selectedAsset}
@@ -49,9 +49,13 @@ const Index = () => {
       />
 
       {/* Main grid: left rail + workspace, both flex to fill */}
-      <div className="grid grid-cols-[260px_minmax(0,1fr)] min-h-0 overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] min-h-0 overflow-hidden">
         {/* Left rail */}
-        <aside className="border-r border-border flex flex-col min-h-0 min-w-0">
+        <aside
+          className={`border-b md:border-b-0 md:border-r border-border flex-col min-h-0 min-w-0 ${
+            tab === 'markets' ? 'flex' : 'hidden'
+          } md:flex`}
+        >
           <div className="px-3 py-2 border-b border-border flex items-center justify-between shrink-0">
             <span className="text-[9px] tracking-[1.5px] text-muted-foreground uppercase font-medium">
               UP / DOWN MARKETS
