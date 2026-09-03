@@ -16,7 +16,15 @@ const PRODUCT_LABEL: Record<string, string> = {
   btc: 'BTC-USD', eth: 'ETH-USD', sol: 'SOL-USD', xrp: 'XRP-USD',
 };
 
+type Tab = 'grid' | 'chart' | 'markets';
+const TABS: { label: string; value: Tab }[] = [
+  { label: 'GRID', value: 'grid' },
+  { label: 'CHART', value: 'chart' },
+  { label: 'MARKETS', value: 'markets' },
+];
+
 const Index = () => {
+  const [tab, setTab] = useState<Tab>('grid');
   const upDown = useUpDownMarkets();
   const allPrices = useCoinbasePricesAll();
 
