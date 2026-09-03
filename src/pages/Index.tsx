@@ -10,6 +10,7 @@ import { PriceTape } from '@/components/PriceTape';
 import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
 import { useCoinbasePricesAll } from '@/hooks/useCoinbasePricesAll';
 import { computeSmaSignal } from '@/lib/smaSignal';
+import { useWindowStrikes } from '@/hooks/useMarketLevels';
 
 function extractTargetPrice(title: string): number | null {
   const m = title.match(/\$([0-9,]+(?:\.\d+)?)/);
