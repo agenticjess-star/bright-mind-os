@@ -10,13 +10,7 @@ import { PriceTape } from '@/components/PriceTape';
 import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
 import { useCoinbasePricesAll } from '@/hooks/useCoinbasePricesAll';
 import { computeSmaSignal } from '@/lib/smaSignal';
-
-function extractTargetPrice(title: string): number | null {
-  const m = title.match(/\$([0-9,]+(?:\.\d+)?)/);
-  if (!m) return null;
-  const v = parseFloat(m[1].replace(/,/g, ''));
-  return isNaN(v) ? null : v;
-}
+import { useWindowStrikes, useSupportResistance } from '@/hooks/useMarketLevels';
 
 const PRODUCT_LABEL: Record<string, string> = {
   btc: 'BTC-USD', eth: 'ETH-USD', sol: 'SOL-USD', xrp: 'XRP-USD',
@@ -30,7 +24,9 @@ const Index = () => {
   const selectedPrice = allPrices.prices[upDown.selectedAsset] ?? null;
   const productId = PRODUCT_LABEL[upDown.selectedAsset];
 
-  const target = upDown.activeMarket ? extractTargetPrice(upDown.activeMarket.eventTitle) : null;
+  const strikes = useWindowStrikes(upDown.allMarketsRaw);
+  const levels = useSupportResistance(upDown.selectedAsset, upDown.selectedTimeframe, selectedPrice);
+  const strikePrice = upDown.activeMarket ? strikes[upDown.activeMarket.eventId] ?? null : null;
   const signal = useMemo(
     () => computeSmaSignal(selectedSeries, upDown.selectedTimeframe),
     [selectedSeries, upDown.selectedTimeframe]
@@ -101,7 +97,9 @@ const Index = () => {
             <LivePriceChart
               series={selectedSeries}
               productId={productId}
-              targetPrice={target}
+              strikePrice={strikePrice}
+              support={levels.support}
+              resistance={levels.resistance}
               fill
             />
           </div>
@@ -111,6 +109,8 @@ const Index = () => {
               <ClobHeatmap
                 allMarkets={upDown.allMarketsRaw}
                 seriesByAsset={allPrices.series}
+                strikes={strikes}
+                spotByAsset={allPrices.prices}
                 selectedAsset={upDown.selectedAsset}
                 selectedTimeframe={upDown.selectedTimeframe}
                 onSelectAsset={upDown.setSelectedAsset}
