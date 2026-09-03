@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { TopBar } from '@/components/TopBar';
 import { CryptoQuickSelect } from '@/components/CryptoQuickSelect';
 import { UpDownDisplay } from '@/components/UpDownDisplay';
