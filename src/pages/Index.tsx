@@ -109,6 +109,8 @@ const Index = () => {
               <ClobHeatmap
                 allMarkets={upDown.allMarketsRaw}
                 seriesByAsset={allPrices.series}
+                strikes={strikes}
+                spotByAsset={allPrices.prices}
                 selectedAsset={upDown.selectedAsset}
                 selectedTimeframe={upDown.selectedTimeframe}
                 onSelectAsset={upDown.setSelectedAsset}
