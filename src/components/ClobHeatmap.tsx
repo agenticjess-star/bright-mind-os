@@ -215,6 +215,20 @@ function HeatRow({ row, isBest }: { row: Row; isBest: boolean }) {
       />
 
       <div className="text-right">
+        {row.needPct == null ? (
+          <span className="text-[9px] font-mono text-muted-foreground/60">—</span>
+        ) : (
+          <span
+            className={`text-[10px] font-mono font-semibold tabular-nums ${
+              row.needPct === 0 ? 'text-chart-up' : 'text-foreground'
+            }`}
+          >
+            {row.needPct === 0 ? 'CLEAR' : `+${row.needPct.toFixed(3)}%`}
+          </span>
+        )}
+      </div>
+
+      <div className="text-right">
         {row.lean === 'NEUTRAL' || !row.ready ? (
           <span className="text-[9px] font-mono text-muted-foreground/60 tracking-[1px]">
             {row.ready ? '—' : '…'}
