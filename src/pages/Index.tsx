@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { TopBar } from '@/components/TopBar';
 import { CryptoQuickSelect } from '@/components/CryptoQuickSelect';
 import { UpDownDisplay } from '@/components/UpDownDisplay';
@@ -16,7 +16,15 @@ const PRODUCT_LABEL: Record<string, string> = {
   btc: 'BTC-USD', eth: 'ETH-USD', sol: 'SOL-USD', xrp: 'XRP-USD',
 };
 
+type Tab = 'grid' | 'chart' | 'markets';
+const TABS: { label: string; value: Tab }[] = [
+  { label: 'GRID', value: 'grid' },
+  { label: 'CHART', value: 'chart' },
+  { label: 'MARKETS', value: 'markets' },
+];
+
 const Index = () => {
+  const [tab, setTab] = useState<Tab>('grid');
   const upDown = useUpDownMarkets();
   const allPrices = useCoinbasePricesAll();
 
@@ -33,7 +41,7 @@ const Index = () => {
   );
 
   return (
-    <div className="grid grid-rows-[44px_32px_minmax(0,1fr)] h-screen w-screen overflow-hidden bg-background">
+    <div className="grid grid-rows-[44px_32px_minmax(0,1fr)_auto] md:grid-rows-[44px_32px_minmax(0,1fr)] h-[100dvh] w-full overflow-hidden bg-background">
       <TopBar
         spotPrice={selectedPrice}
         spotAsset={upDown.selectedAsset}
@@ -49,9 +57,13 @@ const Index = () => {
       />
 
       {/* Main grid: left rail + workspace, both flex to fill */}
-      <div className="grid grid-cols-[260px_minmax(0,1fr)] min-h-0 overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] min-h-0 overflow-hidden">
         {/* Left rail */}
-        <aside className="border-r border-border flex flex-col min-h-0 min-w-0">
+        <aside
+          className={`border-b md:border-b-0 md:border-r border-border flex-col min-h-0 min-w-0 ${
+            tab === 'markets' ? 'flex' : 'hidden'
+          } md:flex`}
+        >
           <div className="px-3 py-2 border-b border-border flex items-center justify-between shrink-0">
             <span className="text-[9px] tracking-[1.5px] text-muted-foreground uppercase font-medium">
               UP / DOWN MARKETS
@@ -92,8 +104,8 @@ const Index = () => {
         </aside>
 
         {/* Workspace: chart on top, heatmap + SMA on bottom */}
-        <main className="grid grid-rows-[minmax(0,3fr)_minmax(0,4fr)] gap-3 p-3 min-h-0 min-w-0 overflow-hidden">
-          <div className="min-h-0 min-w-0">
+        <main className="flex flex-col md:grid md:grid-rows-[minmax(0,3fr)_minmax(0,4fr)] gap-3 p-2 md:p-3 min-h-0 min-w-0 overflow-hidden">
+          <div className={`min-h-[200px] md:min-h-0 min-w-0 ${tab === 'chart' ? 'flex-1' : 'hidden'} md:block`}>
             <LivePriceChart
               series={selectedSeries}
               productId={productId}
@@ -104,8 +116,12 @@ const Index = () => {
             />
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-3 min-h-0 min-w-0">
-            <div className="min-h-0 min-w-0">
+          <div
+            className={`flex-1 flex-col md:grid md:grid-cols-[minmax(0,1fr)_320px] lg:md:grid-cols-[minmax(0,1fr)_360px] gap-3 min-h-0 min-w-0 ${
+              tab === 'grid' ? 'flex' : 'hidden'
+            } md:grid`}
+          >
+            <div className="flex-1 md:flex-none min-h-0 min-w-0">
               <ClobHeatmap
                 allMarkets={upDown.allMarketsRaw}
                 seriesByAsset={allPrices.series}
@@ -117,7 +133,7 @@ const Index = () => {
                 onSelectTimeframe={upDown.setSelectedTimeframe}
               />
             </div>
-            <div className="min-h-0 min-w-0">
+            <div className="shrink-0 md:min-h-0 min-w-0">
               <SmaSignalCard
                 signal={signal}
                 upPrice={upDown.activeMarket?.upPrice ?? null}
@@ -127,6 +143,23 @@ const Index = () => {
           </div>
         </main>
       </div>
+
+      {/* Mobile tab bar */}
+      <nav className="md:hidden grid grid-cols-3 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+        {TABS.map(t => (
+          <button
+            key={t.value}
+            onClick={() => setTab(t.value)}
+            className={`py-3 text-[10px] font-mono tracking-[1.5px] transition-colors ${
+              tab === t.value
+                ? 'text-primary border-t-2 border-primary -mt-px'
+                : 'text-muted-foreground'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };

@@ -13,7 +13,7 @@ export function TopBar({ spotPrice, spotAsset, spotConnected, clobConnected }: T
   const { formatted } = useLiveClock();
 
   return (
-    <header className="h-11 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 gap-4 z-50">
+    <header className="h-11 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-3 md:px-4 gap-2 md:gap-4 z-50">
       <div className="flex items-center gap-1.5">
         <span className="font-display text-[15px] font-bold tracking-tight text-primary glow-primary-strong">
           α
@@ -21,12 +21,12 @@ export function TopBar({ spotPrice, spotAsset, spotConnected, clobConnected }: T
         <span className="font-display text-[13px] font-bold tracking-tight text-foreground">
           GEMINI
         </span>
-        <span className="text-[8px] font-mono text-muted-foreground/60 tracking-[1.5px] ml-1">
+        <span className="hidden lg:inline text-[8px] font-mono text-muted-foreground/60 tracking-[1.5px] ml-1">
           UP/DOWN · SMA CROSSOVER
         </span>
       </div>
 
-      <div className="flex gap-2 ml-auto items-center">
+      <div className="flex gap-1.5 md:gap-2 ml-auto items-center">
         <FeedLed connected={!!spotConnected} label="COINBASE" />
         <FeedLed connected={!!clobConnected} label="CLOB" />
         {spotPrice != null && (
@@ -46,7 +46,7 @@ export function TopBar({ spotPrice, spotAsset, spotConnected, clobConnected }: T
         >
           ● LIVE
         </motion.span>
-        <span className="text-[9px] text-muted-foreground/50 font-mono">
+        <span className="hidden sm:inline text-[9px] text-muted-foreground/50 font-mono">
           {formatted}
         </span>
       </div>
@@ -58,7 +58,7 @@ function FeedLed({ connected, label }: { connected: boolean; label: string }) {
   return (
     <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/60 border border-border/50">
       <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-chart-up animate-pulse-live' : 'bg-muted-foreground/40'}`} />
-      <span className="text-[8px] font-mono text-muted-foreground tracking-[1.5px]">{label}</span>
+      <span className="hidden sm:inline text-[8px] font-mono text-muted-foreground tracking-[1.5px]">{label}</span>
     </div>
   );
 }

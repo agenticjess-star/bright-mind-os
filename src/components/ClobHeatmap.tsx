@@ -188,7 +188,7 @@ function HeatRow({ row, isBest }: { row: Row; isBest: boolean }) {
   return (
     <motion.div
       layout
-      className={`grid grid-cols-[80px_1fr_1fr_72px] px-3 py-2 items-center transition-colors ${
+      className={`grid grid-cols-[64px_1fr_1fr_92px_60px] px-3 py-2 items-center transition-colors ${
         isBest ? 'bg-amber-400/[0.07]' : 'hover:bg-secondary/30'
       }`}
     >
@@ -213,6 +213,20 @@ function HeatRow({ row, isBest }: { row: Row; isBest: boolean }) {
         isBest={isBest && downAligned}
         side="down"
       />
+
+      <div className="text-right">
+        {row.needPct == null ? (
+          <span className="text-[9px] font-mono text-muted-foreground/60">—</span>
+        ) : (
+          <span
+            className={`text-[10px] font-mono font-semibold tabular-nums ${
+              row.needPct === 0 ? 'text-chart-up' : 'text-foreground'
+            }`}
+          >
+            {row.needPct === 0 ? 'CLEAR' : `+${row.needPct.toFixed(3)}%`}
+          </span>
+        )}
+      </div>
 
       <div className="text-right">
         {row.lean === 'NEUTRAL' || !row.ready ? (
@@ -263,7 +277,7 @@ function AxisToggle({ active, onClick, children }: { active: boolean; onClick: (
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-0.5 rounded text-[9px] font-mono tracking-[1.5px] border transition-colors ${
+      className={`px-2 py-1 rounded text-[9px] font-mono tracking-[1.5px] border transition-colors ${
         active
           ? 'bg-primary/15 text-primary border-primary/40'
           : 'bg-secondary/40 text-muted-foreground border-transparent hover:text-foreground'
@@ -278,7 +292,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-colors ${
+      className={`px-2.5 py-1.5 rounded text-[10px] font-mono font-medium border transition-colors ${
         active
           ? 'bg-primary/15 text-primary border-primary/40'
           : 'bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground'
