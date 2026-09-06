@@ -175,3 +175,139 @@ export async function fetchLevelCandles(
   const start = now - granularity * 150;
   return fetchCandles(ASSET_PRODUCT[asset], granularity, start, now, signal);
 }
+
+/* ---------------- paged history + window move statistics ---------------- */
+
+/** Coinbase caps a single candle request at 300 rows — page through the range. */
+export async function fetchCandlesRange(
+  product: string,
+  granularity: number,
+  startSec: number,
+  endSec: number,
+  signal?: AbortSignal,
+): Promise<Candle[]> {
+  const pageSpan = granularity * 300;
+  const pages: Promise<Candle[]>[] = [];
+  for (let s = startSec; s < endSec; s += pageSpan) {
+    pages.push(
+      fetchCandles(product, granularity, s, Math.min(s + pageSpan, endSec), signal).catch(() => []),
+    );
+  }
+  const all = (await Promise.all(pages)).flat();
+  const seen = new Set<number>();
+  return all
+    .filter(c => (seen.has(c.t) ? false : (seen.add(c.t), true)))
+    .sort((a, b) => a.t - b.t);
+}
+
+/** Candle granularity Coinbase supports, per up/down timeframe window. */
+const WINDOW_GRANULARITY: Record<UpDownTimeframe, number> = {
+  '5m': 300, '15m': 900, '1h': 3600, '4h': 3600, daily: 3600,
+};
+
+export interface WindowMove {
+  t: number;          // window open, unix seconds
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+  /** signed % change open → close */
+  changePct: number;
+  /** best % excursion above the open reached inside the window */
+  upReachPct: number;
+  /** best % excursion below the open reached inside the window */
+  downReachPct: number;
+}
+
+/** Group raw candles into full timeframe windows aligned to the epoch grid. */
+export function groupWindows(candles: Candle[], windowSec: number): WindowMove[] {
+  const buckets = new Map<number, Candle[]>();
+  for (const c of candles) {
+    const key = Math.floor(c.t / windowSec) * windowSec;
+    (buckets.get(key) ?? buckets.set(key, []).get(key)!).push(c);
+  }
+  const out: WindowMove[] = [];
+  for (const [t, cs] of [...buckets.entries()].sort((a, b) => a[0] - b[0])) {
+    const open = cs[0].open;
+    const close = cs[cs.length - 1].close;
+    if (!Number.isFinite(open) || open === 0) continue;
+    const high = Math.max(...cs.map(c => c.high));
+    const low = Math.min(...cs.map(c => c.low));
+    out.push({
+      t, open, close, high, low,
+      changePct: ((close - open) / open) * 100,
+      upReachPct: ((high - open) / open) * 100,
+      downReachPct: ((open - low) / open) * 100,
+    });
+  }
+  return out;
+}
+
+/**
+ * Historical windows of the same length as the selected contract, over the
+ * trailing `days`. Used to answer "how often does it actually cover that
+ * distance in time?" with real completed windows — no simulation.
+ */
+export async function fetchWindowMoves(
+  asset: CryptoAsset,
+  timeframe: UpDownTimeframe,
+  days = 3,
+  signal?: AbortSignal,
+): Promise<WindowMove[]> {
+  const windowSec = TIMEFRAME_SECONDS[timeframe];
+  const granularity = WINDOW_GRANULARITY[timeframe];
+  const now = Math.floor(Date.now() / 1000);
+  const start = now - days * 86400;
+  const candles = await fetchCandlesRange(ASSET_PRODUCT[asset], granularity, start, now, signal);
+  const windows = groupWindows(candles, windowSec);
+  // drop the window still in progress
+  const currentOpen = Math.floor(now / windowSec) * windowSec;
+  return windows.filter(w => w.t < currentOpen);
+}
+
+export interface Coverage {
+  /** share of past windows that travelled at least `needPct` in the given direction */
+  rate: number | null;
+  hits: number;
+  total: number;
+  /** median absolute excursion in that direction, % */
+  medianReachPct: number | null;
+}
+
+/** How often past windows covered `needPct` in `direction`, closing there or not. */
+export function coverageFor(
+  windows: WindowMove[],
+  needPct: number,
+  direction: 'up' | 'down',
+): Coverage {
+  if (windows.length === 0) return { rate: null, hits: 0, total: 0, medianReachPct: null };
+  const reach = windows.map(w => (direction === 'up' ? w.upReachPct : w.downReachPct));
+  const hits = reach.filter(r => r >= needPct).length;
+  const sorted = [...reach].sort((a, b) => a - b);
+  return {
+    rate: hits / windows.length,
+    hits,
+    total: windows.length,
+    medianReachPct: sorted[Math.floor(sorted.length / 2)] ?? null,
+  };
+}
+
+/** Granularity for the live chart at a given lookback span. */
+export function chartGranularity(spanSec: number): number {
+  if (spanSec <= 1800) return 60;
+  if (spanSec <= 7200) return 60;
+  if (spanSec <= 21600) return 300;
+  if (spanSec <= 86400) return 900;
+  return 3600;
+}
+
+/** Recent candles for chart backfill over the given lookback. */
+export async function fetchChartHistory(
+  asset: CryptoAsset,
+  spanSec: number,
+  signal?: AbortSignal,
+): Promise<Candle[]> {
+  const g = chartGranularity(spanSec);
+  const now = Math.floor(Date.now() / 1000);
+  return fetchCandlesRange(ASSET_PRODUCT[asset], g, now - spanSec, now, signal);
+}
