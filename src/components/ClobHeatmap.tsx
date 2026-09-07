@@ -132,7 +132,7 @@ export function ClobHeatmap({
       </div>
 
       {/* Rows — flex to fill remaining space */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin divide-y divide-border">
+      <div className="grid grid-rows-5 flex-1 min-h-0 overflow-hidden divide-y divide-border">
         <AnimatePresence initial={false}>
           {rows.map(row => (
             <HeatRow
@@ -219,7 +219,7 @@ function HeatRow({
       role="button"
       tabIndex={0}
       onKeyDown={e => { if (e.key === 'Enter') onClick(); }}
-      className={`grid grid-cols-[76px_minmax(0,1fr)_minmax(0,1fr)_56px] px-3 py-2 items-center cursor-pointer transition-colors ${
+      className={`grid grid-cols-[76px_minmax(0,1fr)_minmax(0,1fr)_56px] px-3 py-2 min-h-0 items-center cursor-pointer transition-colors ${
         bestSide ? 'bg-amber-400/[0.07]' : 'hover:bg-secondary/30'
       }`}
     >
