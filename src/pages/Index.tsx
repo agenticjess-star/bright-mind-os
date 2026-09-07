@@ -109,9 +109,13 @@ const Index = () => {
             <LivePriceChart
               series={selectedSeries}
               productId={productId}
+              asset={upDown.selectedAsset}
+              timeframe={upDown.selectedTimeframe}
               strikePrice={strikePrice}
               support={levels.support}
               resistance={levels.resistance}
+              endDate={upDown.activeMarket?.endDate ?? null}
+              moves={windowMoves}
               fill
             />
           </div>
