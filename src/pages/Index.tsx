@@ -4,7 +4,7 @@ import { CryptoQuickSelect } from '@/components/CryptoQuickSelect';
 import { UpDownDisplay } from '@/components/UpDownDisplay';
 import { EventHistory } from '@/components/EventHistory';
 import { LivePriceChart } from '@/components/LivePriceChart';
-import { SmaSignalCard } from '@/components/SmaSignalCard';
+import { TrendBar } from '@/components/TrendBar';
 import { ClobHeatmap } from '@/components/ClobHeatmap';
 import { PriceTape } from '@/components/PriceTape';
 import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
@@ -105,8 +105,28 @@ const Index = () => {
           </div>
         </aside>
 
-        {/* Workspace: chart on top, heatmap + SMA on bottom */}
-        <main className="flex flex-col md:grid md:grid-rows-[minmax(0,3fr)_minmax(0,4fr)] gap-3 p-2 md:p-3 min-h-0 min-w-0 overflow-hidden">
+        {/* Workspace: comparison grid is primary; chart stays large enough to read. */}
+        <main className="flex flex-col md:grid md:grid-rows-[minmax(0,5fr)_minmax(240px,3fr)_40px] gap-2 p-2 md:p-3 min-h-0 min-w-0 overflow-hidden">
+          <div
+            className={`min-h-0 min-w-0 ${tab === 'grid' ? 'flex flex-1' : 'hidden'} md:flex md:row-start-1`}
+          >
+            <ClobHeatmap
+              allMarkets={upDown.allMarketsRaw}
+              seriesByAsset={allPrices.series}
+              strikes={strikes}
+              spotByAsset={allPrices.prices}
+              selectedAsset={upDown.selectedAsset}
+              selectedTimeframe={upDown.selectedTimeframe}
+              onSelectAsset={upDown.setSelectedAsset}
+              onSelectTimeframe={upDown.setSelectedTimeframe}
+              onOpenRow={(asset, timeframe) => {
+                upDown.setSelectedAsset(asset);
+                upDown.setSelectedTimeframe(timeframe);
+                setTab('chart');
+              }}
+            />
+          </div>
+
           <div className={`min-h-[200px] md:min-h-0 min-w-0 ${tab === 'chart' ? 'flex-1' : 'hidden'} md:block`}>
             <LivePriceChart
               series={selectedSeries}
@@ -122,30 +142,14 @@ const Index = () => {
             />
           </div>
 
-          <div
-            className={`flex-1 flex-col md:grid md:grid-cols-[minmax(0,1fr)_320px] lg:md:grid-cols-[minmax(0,1fr)_360px] gap-3 min-h-0 min-w-0 ${
-              tab === 'grid' ? 'flex' : 'hidden'
-            } md:grid`}
-          >
-            <div className="flex-1 md:flex-none min-h-0 min-w-0">
-              <ClobHeatmap
-                allMarkets={upDown.allMarketsRaw}
-                seriesByAsset={allPrices.series}
-                strikes={strikes}
-                spotByAsset={allPrices.prices}
-                selectedAsset={upDown.selectedAsset}
-                selectedTimeframe={upDown.selectedTimeframe}
-                onSelectAsset={upDown.setSelectedAsset}
-                onSelectTimeframe={upDown.setSelectedTimeframe}
-              />
-            </div>
-            <div className="shrink-0 md:min-h-0 min-w-0">
-              <SmaSignalCard
-                signal={signal}
-                upPrice={upDown.activeMarket?.upPrice ?? null}
-                downPrice={upDown.activeMarket?.downPrice ?? null}
-              />
-            </div>
+          <div className="hidden md:block min-w-0 min-h-0">
+            <TrendBar
+              signal={signal}
+              upPrice={upDown.activeMarket?.upPrice ?? null}
+              downPrice={upDown.activeMarket?.downPrice ?? null}
+              asset={upDown.selectedAsset}
+              timeframe={upDown.selectedTimeframe}
+            />
           </div>
         </main>
       </div>

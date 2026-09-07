@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  LineChart, Line, YAxis, XAxis, ResponsiveContainer, ReferenceLine, ReferenceArea, Tooltip,
+  LineChart, Line, YAxis, XAxis, ResponsiveContainer, ReferenceLine, Tooltip,
 } from 'recharts';
 import type { PricePoint } from '@/hooks/useCoinbasePrice';
 import type { CryptoAsset, UpDownTimeframe } from '@/lib/updownTypes';
@@ -120,9 +120,13 @@ export function LivePriceChart({
       .filter(c => c.t * 1000 >= cutoff)
       .map(c => ({ ts: c.t * 1000, price: c.close }));
     const lastHist = pts.length ? pts[pts.length - 1].ts : 0;
+    // One point per second keeps the live edge fluid without drawing every
+    // websocket micro-update as a jagged segment.
+    const liveBySecond = new Map<number, number>();
     for (const p of series) {
-      if (p.ts > lastHist && p.ts >= cutoff) pts.push({ ts: p.ts, price: p.price });
+      if (p.ts > lastHist && p.ts >= cutoff) liveBySecond.set(Math.floor(p.ts / 1000) * 1000, p.price);
     }
+    for (const [ts, price] of liveBySecond) pts.push({ ts, price });
     return pts.sort((a, b) => a.ts - b.ts);
   }, [history, series, spanSec]);
 
@@ -167,13 +171,15 @@ export function LivePriceChart({
   const rawMin = Math.min(...prices);
   const rawMax = Math.max(...prices);
   const span = Math.max(rawMax - rawMin, rawMax * 0.0004);
-  const extras = [strikePrice, support, resistance].filter(
+  const structureLevels = [support, resistance].filter(
     (v): v is number => typeof v === 'number' && Number.isFinite(v),
   );
-  // Keep the axis tight around the action; only admit levels close enough to matter.
-  const near = extras.filter(v => v > rawMin - span * 1.5 && v < rawMax + span * 1.5);
-  const min = Math.min(rawMin, ...near);
-  const max = Math.max(rawMax, ...near);
+  // Support/resistance are contextual only when close to the visible action.
+  // The contract strike is always admitted so its distance remains truthful.
+  const near = structureLevels.filter(v => v > rawMin - span && v < rawMax + span);
+  const contractLevel = typeof strikePrice === 'number' && Number.isFinite(strikePrice) ? [strikePrice] : [];
+  const min = Math.min(rawMin, ...near, ...contractLevel);
+  const max = Math.max(rawMax, ...near, ...contractLevel);
   const pad = (max - min) * 0.12 || max * 0.0005;
   const firstTs = data[0].ts;
   const lastTs = data[data.length - 1].ts;
@@ -256,11 +262,11 @@ export function LivePriceChart({
           )}
           <span className="ml-3">
             SUP {support != null ? fmtUsd(support) : '—'}
-            {distTo(support) != null && ` (${fmtPct(distTo(support)!)})`}
+            {distTo(support) != null && ` (${fmtPct(distTo(support) ?? 0)})`}
           </span>
           <span className="ml-3">
             RES {resistance != null ? fmtUsd(resistance) : '—'}
-            {distTo(resistance) != null && ` (${fmtPct(distTo(resistance)!)})`}
+            {distTo(resistance) != null && ` (${fmtPct(distTo(resistance) ?? 0)})`}
           </span>
         </div>
       )}
@@ -269,7 +275,7 @@ export function LivePriceChart({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
             <XAxis dataKey="ts" type="number" domain={[firstTs, lastTs]} hide />
-            <YAxis domain={[min - pad, max + pad]} hide />
+            <YAxis domain={[min - pad, max + pad]} hide allowDataOverflow />
             <Tooltip
               cursor={{ stroke: 'hsl(var(--border))' }}
               contentStyle={{
@@ -283,24 +289,6 @@ export function LivePriceChart({
               labelFormatter={(ts: number) => new Date(ts).toLocaleTimeString()}
               formatter={(v: number) => [fmtUsd(v), 'Price']}
             />
-
-            {/* The distance still to cover, drawn as a band between spot and the strike */}
-            {strikePrice != null && spot != null && (
-              <ReferenceArea
-                y1={Math.min(spot, strikePrice)}
-                y2={Math.max(spot, strikePrice)}
-                fill="hsl(var(--warning))"
-                fillOpacity={0.1}
-                stroke="none"
-                label={{
-                  value: gapPct != null ? `${Math.abs(gapPct).toFixed(3)}% TO GO` : '',
-                  position: 'insideRight',
-                  fill: 'hsl(var(--warning))',
-                  fontSize: 9,
-                  fontFamily: 'JetBrains Mono, monospace',
-                }}
-              />
-            )}
 
             {resistance != null && near.includes(resistance) && (
               <ReferenceLine
@@ -335,16 +323,8 @@ export function LivePriceChart({
                 }}
               />
             )}
-            {spot != null && (
-              <ReferenceLine
-                y={spot}
-                stroke={strokeColor}
-                strokeOpacity={0.4}
-                strokeWidth={1}
-              />
-            )}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="price"
               stroke={strokeColor}
               strokeWidth={1.75}
