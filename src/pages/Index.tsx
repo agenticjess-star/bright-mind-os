@@ -11,6 +11,7 @@ import { useUpDownMarkets } from '@/hooks/useUpDownMarkets';
 import { useCoinbasePricesAll } from '@/hooks/useCoinbasePricesAll';
 import { computeSmaSignal } from '@/lib/smaSignal';
 import { useWindowStrikes, useSupportResistance } from '@/hooks/useMarketLevels';
+import { useWindowMoves } from '@/hooks/useMarketStats';
 
 const PRODUCT_LABEL: Record<string, string> = {
   btc: 'BTC-USD', eth: 'ETH-USD', sol: 'SOL-USD', xrp: 'XRP-USD',
@@ -34,6 +35,7 @@ const Index = () => {
 
   const strikes = useWindowStrikes(upDown.allMarketsRaw);
   const levels = useSupportResistance(upDown.selectedAsset, upDown.selectedTimeframe, selectedPrice);
+  const windowMoves = useWindowMoves(upDown.selectedAsset, upDown.selectedTimeframe);
   const strikePrice = upDown.activeMarket ? strikes[upDown.activeMarket.eventId] ?? null : null;
   const signal = useMemo(
     () => computeSmaSignal(selectedSeries, upDown.selectedTimeframe),
@@ -109,9 +111,13 @@ const Index = () => {
             <LivePriceChart
               series={selectedSeries}
               productId={productId}
+              asset={upDown.selectedAsset}
+              timeframe={upDown.selectedTimeframe}
               strikePrice={strikePrice}
               support={levels.support}
               resistance={levels.resistance}
+              endDate={upDown.activeMarket?.endDate ?? null}
+              moves={windowMoves}
               fill
             />
           </div>
