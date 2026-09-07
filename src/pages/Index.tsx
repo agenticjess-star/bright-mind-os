@@ -108,7 +108,7 @@ const Index = () => {
         {/* Workspace: comparison grid is primary; chart stays large enough to read. */}
         <main className="flex flex-col md:grid md:grid-rows-[minmax(0,5fr)_minmax(240px,3fr)_40px] gap-2 p-2 md:p-3 min-h-0 min-w-0 overflow-hidden">
           <div
-            className={`min-h-0 min-w-0 ${tab === 'grid' ? 'flex flex-1' : 'hidden'} md:flex md:row-start-1`}
+            className={`min-h-0 min-w-0 w-full ${tab === 'grid' ? 'flex flex-1' : 'hidden'} md:flex md:row-start-1`}
           >
             <ClobHeatmap
               allMarkets={upDown.allMarketsRaw}

@@ -294,8 +294,8 @@ export function LivePriceChart({
               <ReferenceLine
                 y={resistance}
                 stroke="hsl(var(--destructive))"
-                strokeDasharray="2 4"
-                strokeOpacity={0.5}
+                strokeDasharray="3 5"
+                strokeOpacity={0.3}
                 strokeWidth={1}
               />
             )}
@@ -303,8 +303,8 @@ export function LivePriceChart({
               <ReferenceLine
                 y={support}
                 stroke="hsl(var(--chart-up))"
-                strokeDasharray="2 4"
-                strokeOpacity={0.5}
+                strokeDasharray="3 5"
+                strokeOpacity={0.3}
                 strokeWidth={1}
               />
             )}
@@ -324,7 +324,7 @@ export function LivePriceChart({
               />
             )}
             <Line
-              type="linear"
+              type="monotoneX"
               dataKey="price"
               stroke={strokeColor}
               strokeWidth={1.75}
