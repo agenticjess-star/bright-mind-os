@@ -43,7 +43,7 @@ const Index = () => {
   );
 
   return (
-    <div className="grid grid-rows-[44px_32px_minmax(0,1fr)_auto] md:grid-rows-[44px_32px_minmax(0,1fr)] h-[100dvh] w-full overflow-hidden bg-background">
+    <div className="grid grid-rows-[48px_36px_minmax(0,1fr)_auto] md:grid-rows-[48px_36px_minmax(0,1fr)] h-[100dvh] w-full overflow-hidden bg-background">
       <TopBar
         spotPrice={selectedPrice}
         spotAsset={upDown.selectedAsset}
@@ -59,7 +59,7 @@ const Index = () => {
       />
 
       {/* Main grid: left rail + workspace, both flex to fill */}
-      <div className="grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] min-h-0 overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[clamp(232px,20vw,280px)_minmax(0,1fr)] min-h-0 overflow-hidden">
         {/* Left rail */}
         <aside
           className={`border-b md:border-b-0 md:border-r border-border flex-col min-h-0 min-w-0 ${
@@ -106,7 +106,7 @@ const Index = () => {
         </aside>
 
         {/* Workspace: comparison grid is primary; chart stays large enough to read. */}
-        <main className="flex flex-col md:grid md:grid-rows-[minmax(0,5fr)_minmax(240px,3fr)_40px] gap-2 p-2 md:p-3 min-h-0 min-w-0 overflow-hidden">
+        <main className="flex flex-col md:grid md:grid-rows-[minmax(320px,5fr)_minmax(220px,3fr)_44px] gap-2 p-2 sm:p-3 min-h-0 min-w-0 overflow-hidden max-w-[1600px] w-full mx-auto">
           <div
             className={`min-h-0 min-w-0 w-full ${tab === 'grid' ? 'flex flex-1' : 'hidden'} md:flex md:row-start-1`}
           >
@@ -155,12 +155,12 @@ const Index = () => {
       </div>
 
       {/* Mobile tab bar */}
-      <nav className="md:hidden grid grid-cols-3 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+      <nav className="md:hidden grid grid-cols-3 min-h-14 border-t border-border bg-card/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
         {TABS.map(t => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
-            className={`py-3 text-[10px] font-mono tracking-[1.5px] transition-colors ${
+            className={`min-h-14 py-3 text-[10px] font-mono tracking-[1.5px] transition-colors ${
               tab === t.value
                 ? 'text-primary border-t-2 border-primary -mt-px'
                 : 'text-muted-foreground'

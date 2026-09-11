@@ -89,50 +89,53 @@ export function ClobHeatmap({
   }, [rows, side]);
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col h-full min-h-0">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2 shrink-0">
-        <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px]">
-          CLOB ASKS · % MOVE TO BEAT
-        </span>
-        <div className="flex gap-1">
+    <section className="bg-card border border-border rounded-md overflow-hidden flex flex-col h-full min-h-0 w-full">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-border gap-3 shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-[10px] font-display font-semibold text-foreground tracking-[1px] truncate">
+            LIVE CONTRACT COMPARISON
+          </h1>
+          <p className="text-[8px] font-mono text-muted-foreground tracking-[1px] mt-0.5">
+            ASK · DISTANCE TO BEAT
+          </p>
+        </div>
+        <div className="flex gap-1 p-0.5 bg-secondary/50 rounded-md shrink-0">
           <AxisToggle active={axis === 'coin'} onClick={() => setAxis('coin')}>BY COIN</AxisToggle>
           <AxisToggle active={axis === 'timeframe'} onClick={() => setAxis('timeframe')}>BY TF</AxisToggle>
         </div>
       </div>
 
-      {/* Selector pill row + side filter */}
-      <div className="px-3 py-2 border-b border-border flex flex-wrap items-center gap-1 shrink-0">
-        {axis === 'coin'
-          ? CRYPTO_ASSETS.map(a => (
-              <Pill key={a.value} active={selectedAsset === a.value} onClick={() => onSelectAsset(a.value)}>
-                {a.label}
-              </Pill>
-            ))
-          : UPDOWN_TIMEFRAMES.map(tf => (
-              <Pill key={tf.value} active={selectedTimeframe === tf.value} onClick={() => onSelectTimeframe(tf.value)}>
-                {tf.label}
-              </Pill>
-            ))}
-        <span className="ml-auto flex items-center gap-1">
-          <span className="text-[8px] font-mono text-muted-foreground tracking-[1.5px] hidden sm:inline">SIDE</span>
+      <div className="px-3 sm:px-4 py-2.5 border-b border-border grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 shrink-0">
+        <div className="grid grid-flow-col auto-cols-fr gap-1 min-w-0">
+          {axis === 'coin'
+            ? CRYPTO_ASSETS.map(a => (
+                <Pill key={a.value} active={selectedAsset === a.value} onClick={() => onSelectAsset(a.value)}>
+                  {a.label}
+                </Pill>
+              ))
+            : UPDOWN_TIMEFRAMES.map(tf => (
+                <Pill key={tf.value} active={selectedTimeframe === tf.value} onClick={() => onSelectTimeframe(tf.value)}>
+                  {tf.label}
+                </Pill>
+              ))}
+        </div>
+        <div className="grid grid-cols-3 gap-1 sm:w-[176px]">
           {(['auto', 'UP', 'DOWN'] as SideFilter[]).map(s => (
             <Pill key={s} active={side === s} onClick={() => setSide(s)}>
               {s === 'auto' ? 'SMA' : s}
             </Pill>
           ))}
-        </span>
+        </div>
       </div>
 
-      {/* Header */}
-      <div className="grid grid-cols-[76px_minmax(0,1fr)_minmax(0,1fr)_56px] px-3 py-1.5 border-b border-border text-[8px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
-        <span>{axis === 'coin' ? 'TF · BEAT' : 'ASSET · BEAT'}</span>
+      <div className="grid grid-cols-[minmax(62px,.85fr)_minmax(72px,1fr)_minmax(72px,1fr)_minmax(36px,.55fr)] gap-1 px-3 sm:px-4 py-2 border-b border-border text-[8px] font-mono text-muted-foreground tracking-[1px] shrink-0 items-center">
+        <span>{axis === 'coin' ? 'TF · BEAT' : 'COIN · BEAT'}</span>
         <span className="text-center">UP ¢ / NEED</span>
         <span className="text-center">DOWN ¢ / NEED</span>
         <span className="text-right">LEAN</span>
       </div>
 
-      {/* Rows — flex to fill remaining space */}
-      <div className="grid grid-rows-5 flex-1 min-h-0 overflow-hidden divide-y divide-border">
+      <div className={`grid ${axis === 'coin' ? 'grid-rows-5' : 'grid-rows-4'} flex-1 min-h-0 overflow-hidden divide-y divide-border`}>
         <AnimatePresence initial={false}>
           {rows.map(row => (
             <HeatRow
@@ -145,11 +148,12 @@ export function ClobHeatmap({
         </AnimatePresence>
       </div>
 
-      <div className="px-3 py-1.5 border-t border-border flex items-center gap-3 text-[8px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
+      <div className="px-3 sm:px-4 py-2 border-t border-border flex items-center justify-center sm:justify-start gap-3 sm:gap-5 text-[8px] font-mono text-muted-foreground tracking-[1px] shrink-0">
         <LegendDot className="bg-chart-up/70" /> SMA ALIGNED
-        <LegendDot className="bg-amber-400/80 ring-1 ring-amber-300/60" /> BEST · ASK × DISTANCE
+        <LegendDot className="bg-warning/80 ring-1 ring-warning/60" /> BEST VALUE
+        <span className="hidden sm:inline">VALUE = ALIGNED ASK &lt; 25¢</span>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -219,13 +223,13 @@ function HeatRow({
       role="button"
       tabIndex={0}
       onKeyDown={e => { if (e.key === 'Enter') onClick(); }}
-      className={`grid grid-cols-[76px_minmax(0,1fr)_minmax(0,1fr)_56px] px-3 py-2 min-h-0 items-center cursor-pointer transition-colors ${
-        bestSide ? 'bg-amber-400/[0.07]' : 'hover:bg-secondary/30'
+      className={`grid grid-cols-[minmax(62px,.85fr)_minmax(72px,1fr)_minmax(72px,1fr)_minmax(36px,.55fr)] gap-1 px-3 sm:px-4 py-2 min-h-0 items-center cursor-pointer transition-colors ${
+        bestSide ? 'bg-warning/[0.07]' : 'hover:bg-secondary/30'
       }`}
     >
       <div className="min-w-0">
         <div className="flex items-center gap-1">
-          <span className="text-[11px] font-display font-semibold uppercase leading-none">{row.label}</span>
+          <span className="text-[12px] font-display font-semibold uppercase leading-none">{row.label}</span>
           {left && <span className="text-[8px] font-mono text-muted-foreground leading-none">{left}</span>}
         </div>
         <div className="text-[8px] font-mono text-muted-foreground tabular-nums truncate leading-tight mt-0.5">
@@ -238,6 +242,7 @@ function HeatRow({
         need={row.needUp}
         aligned={row.lean === 'UP'}
         isBest={bestSide === 'UP'}
+        isDeal={row.lean === 'UP' && row.upPrice != null && row.upPrice < 0.25}
         side="up"
       />
       <PriceCell
@@ -245,6 +250,7 @@ function HeatRow({
         need={row.needDown}
         aligned={row.lean === 'DOWN'}
         isBest={bestSide === 'DOWN'}
+        isDeal={row.lean === 'DOWN' && row.downPrice != null && row.downPrice < 0.25}
         side="down"
       />
 
@@ -268,30 +274,33 @@ function HeatRow({
 }
 
 function PriceCell({
-  price, need, aligned, isBest, side,
+  price, need, aligned, isBest, isDeal, side,
 }: {
   price: number | null;
   need: number | null;
   aligned: boolean;
   isBest: boolean;
+  isDeal: boolean;
   side: 'up' | 'down';
 }) {
   const sideColor = side === 'up' ? 'text-chart-up' : 'text-destructive';
   const bg = isBest
-    ? 'bg-amber-400/15 border-amber-400/50 ring-1 ring-amber-300/40'
+    ? 'bg-warning/15 border-warning/60 ring-1 ring-warning/40'
+    : isDeal
+      ? 'bg-primary/15 border-primary/50'
     : aligned
       ? side === 'up'
         ? 'bg-chart-up/12 border-chart-up/35'
         : 'bg-destructive/12 border-destructive/35'
       : 'bg-secondary/20 border-transparent';
   return (
-    <div className={`mx-1 rounded border px-2 py-1 text-center ${bg}`}>
+    <div className={`mx-0.5 rounded-md border px-1 sm:px-2 py-1.5 text-center min-w-0 ${bg}`}>
       <motion.div
         key={price ?? 'na'}
         initial={{ opacity: 0.6 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25 }}
-        className={`text-[13px] font-display font-bold tabular-nums leading-none ${aligned ? sideColor : 'text-muted-foreground'}`}
+        className={`text-[14px] font-display font-bold tabular-nums leading-none ${aligned ? sideColor : 'text-muted-foreground'}`}
       >
         {price != null ? `${(price * 100).toFixed(1)}¢` : '—'}
       </motion.div>
@@ -304,7 +313,7 @@ function PriceCell({
               : 'text-muted-foreground'
         }`}
       >
-        {need == null ? '—' : need === 0 ? 'IN MONEY' : `+${need.toFixed(3)}%`}
+        {need == null ? '—' : isDeal ? 'VALUE · ' : ''}{need == null ? '' : need === 0 ? 'IN MONEY' : `+${need.toFixed(3)}%`}
       </div>
     </div>
   );
@@ -314,7 +323,7 @@ function AxisToggle({ active, onClick, children }: { active: boolean; onClick: (
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-1 rounded text-[9px] font-mono tracking-[1.5px] border transition-colors ${
+      className={`min-h-8 px-2 py-1 rounded text-[9px] font-mono tracking-[1px] border transition-colors ${
         active
           ? 'bg-primary/15 text-primary border-primary/40'
           : 'bg-secondary/40 text-muted-foreground border-transparent hover:text-foreground'
@@ -329,7 +338,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button
       onClick={onClick}
-      className={`px-2.5 py-1.5 rounded text-[10px] font-mono font-medium border transition-colors ${
+      className={`w-full min-h-9 px-1.5 sm:px-2.5 py-1.5 rounded text-[10px] font-mono font-medium border transition-colors ${
         active
           ? 'bg-primary/15 text-primary border-primary/40'
           : 'bg-secondary/50 text-muted-foreground border-transparent hover:bg-secondary hover:text-foreground'

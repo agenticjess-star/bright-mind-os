@@ -44,13 +44,13 @@ export function PriceTape({ prices, series, onSelect, selected }: PriceTapeProps
   }, [prices, series]);
 
   return (
-    <div className="relative h-8 border-b border-border bg-card/40 overflow-hidden">
+    <div className="relative h-9 border-b border-border bg-card/40 overflow-hidden">
       {/* fade edges */}
       <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 z-10 bg-gradient-to-r from-background to-transparent" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 z-10 bg-gradient-to-l from-background to-transparent" />
 
       <motion.div
-        className="flex items-center gap-6 h-full whitespace-nowrap px-4 will-change-transform"
+        className="flex items-center gap-5 sm:gap-8 h-full whitespace-nowrap px-3 sm:px-5 will-change-transform"
         animate={{ x: ['0%', '-33.333%'] }}
         transition={{ duration: 40, ease: 'linear', repeat: Infinity }}
       >
@@ -61,7 +61,7 @@ export function PriceTape({ prices, series, onSelect, selected }: PriceTapeProps
             <button
               key={`${it.asset}-${i}`}
               onClick={() => onSelect?.(it.asset)}
-              className={`flex items-center gap-2 shrink-0 group ${isSel ? 'text-primary' : ''}`}
+              className={`flex h-9 items-center gap-2 shrink-0 group ${isSel ? 'text-primary' : ''}`}
             >
               <span className={`text-[10px] font-mono font-semibold tracking-[1.5px] ${
                 isSel ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
