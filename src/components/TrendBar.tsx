@@ -31,7 +31,7 @@ export function TrendBar({ signal, upPrice, downPrice, asset, timeframe }: Trend
     lean === 'UP' ? 'text-chart-up' : lean === 'DOWN' ? 'text-destructive' : 'text-muted-foreground';
 
   return (
-    <div className="bg-card border border-border rounded-lg px-3 py-2 flex items-center gap-3 overflow-x-auto scrollbar-thin">
+    <div className="bg-card border border-border rounded-md px-3 py-2 flex items-center justify-center gap-3 overflow-x-auto scrollbar-thin">
       <span className="text-[9px] font-mono text-muted-foreground tracking-[1.5px] shrink-0">
         {asset.toUpperCase()} · {timeframe.toUpperCase()} TREND
       </span>

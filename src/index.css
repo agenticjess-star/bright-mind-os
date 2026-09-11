@@ -1,28 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 225 25% 3%;
-    --foreground: 210 25% 90%;
+    --background: 220 30% 4%;
+    --foreground: 216 23% 92%;
 
-    --card: 225 22% 5%;
+    --card: 220 24% 6%;
     --card-foreground: 210 25% 90%;
 
     --popover: 225 22% 6%;
     --popover-foreground: 210 25% 90%;
 
-    --primary: 160 85% 45%;
+    --primary: 159 72% 46%;
     --primary-foreground: 225 25% 3%;
 
-    --secondary: 225 18% 10%;
+    --secondary: 216 16% 11%;
     --secondary-foreground: 210 25% 90%;
 
     --muted: 225 18% 10%;
-    --muted-foreground: 220 15% 45%;
+    --muted-foreground: 216 12% 52%;
 
     --accent: 225 18% 12%;
     --accent-foreground: 210 25% 90%;
@@ -33,11 +31,11 @@
     --warning: 42 95% 55%;
     --warning-foreground: 225 25% 3%;
 
-    --border: 225 18% 9%;
+    --border: 216 16% 12%;
     --input: 225 18% 10%;
     --ring: 160 85% 45%;
 
-    --radius: 0.5rem;
+    --radius: 0.375rem;
 
     --dim: 225 15% 18%;
     --mid: 225 15% 24%;
@@ -58,25 +56,25 @@
   }
 
   .dark {
-    --background: 225 25% 3%;
+    --background: 220 30% 4%;
     --foreground: 210 25% 90%;
     --card: 225 22% 5%;
     --card-foreground: 210 25% 90%;
     --popover: 225 22% 6%;
     --popover-foreground: 210 25% 90%;
-    --primary: 160 85% 45%;
+    --primary: 159 72% 46%;
     --primary-foreground: 225 25% 3%;
-    --secondary: 225 18% 10%;
+    --secondary: 216 16% 11%;
     --secondary-foreground: 210 25% 90%;
     --muted: 225 18% 10%;
-    --muted-foreground: 220 15% 45%;
+    --muted-foreground: 216 12% 52%;
     --accent: 225 18% 12%;
     --accent-foreground: 210 25% 90%;
     --destructive: 0 78% 55%;
     --destructive-foreground: 210 25% 90%;
     --warning: 42 95% 55%;
     --warning-foreground: 225 25% 3%;
-    --border: 225 18% 9%;
+    --border: 216 16% 12%;
     --input: 225 18% 10%;
     --ring: 160 85% 45%;
     --sidebar-background: 225 25% 3%;
@@ -97,9 +95,9 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Manrope', sans-serif;
     font-size: 13px;
-    overflow-x: hidden;
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -107,7 +105,7 @@
 
 @layer utilities {
   .font-display {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Sora', sans-serif;
   }
 
   .font-mono {
@@ -115,7 +113,11 @@
   }
 
   .font-body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 
   .glow-primary {
