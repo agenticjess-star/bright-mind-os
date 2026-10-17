@@ -22,7 +22,7 @@ interface UsePaperTraderArgs {
   allMarkets: UpDownMarket[];
   strikes: Record<string, number>;
   spotByAsset: Record<string, number | null>;
-  seriesByAsset: Record<string, { t: number; p: number }[]>;
+  seriesByAsset: Record<string, { ts: number; price: number }[]>;
   enabled: boolean;
 }
 
@@ -133,9 +133,9 @@ export function usePaperTrader({ allMarkets, strikes, spotByAsset, seriesByAsset
           minutesLeft: Math.round(minutesLeft * 10) / 10,
           upAsk: m.upPrice,
           downAsk: m.downPrice,
-          smaSignal: sig.direction,
-          smaSpreadPct: sig.spreadPct,
-          lastCrossAgoMin: sig.lastCrossAgoMin,
+          smaSignal: sig.lean.toLowerCase() as 'up' | 'down' | 'neutral',
+          smaSpreadPct: sig.spreadPct != null ? sig.spreadPct * 100 : null,
+          lastCrossAgoMin: sig.lastCrossTs != null ? (now - sig.lastCrossTs) / 60000 : null,
         };
       });
 
