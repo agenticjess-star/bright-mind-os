@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "sdk_version": "3.4.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "alpha-gemini",
+      "version": "0.1.0",
+      "title": "Alpha Gemini"
+    },
+    "tools": [
+      {
+        "name": "list_updown_markets",
+        "title": "List live Up/Down markets",
+        "description": "List live Polymarket crypto Up/Down contracts with real CLOB best bid/ask for Up and Down, optionally filtered by coin and timeframe.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "asset": {
+              "description": "Coin: btc, eth, sol or xrp. Omit for all.",
+              "type": "string",
+              "enum": [
+                "btc",
+                "eth",
+                "sol",
+                "xrp"
+              ]
+            },
+            "timeframe": {
+              "description": "Window: 5m, 15m, 1h, 4h or daily. Omit for all.",
+              "type": "string",
+              "enum": [
+                "5m",
+                "15m",
+                "1h",
+                "4h",
+                "daily"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_spot_prices",
+        "title": "Get crypto spot prices",
+        "description": "Get the latest Coinbase spot prices for BTC, ETH, SOL and XRP in USD.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": null,
+        "outputSchema": null
+      }
+    ]
+  }
+}
